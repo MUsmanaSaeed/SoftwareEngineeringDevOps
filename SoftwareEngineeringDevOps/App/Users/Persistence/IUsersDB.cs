@@ -9,6 +9,6 @@ namespace SoftwareEngineeringDevOps.App.Users.Persistence
         UserDBO? GetByUsername(string username);
         UserDBO Insert(NewUser user);
         IEnumerable<UserDBO> ListAll();
-        UserDBO Update(UserDBO dbo);
+        UserDBO Update(EditUser dbo);
     }
 }

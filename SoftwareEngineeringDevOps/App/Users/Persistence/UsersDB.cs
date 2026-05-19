@@ -42,17 +42,17 @@ namespace SoftwareEngineeringDevOps.App.Users.Persistence
             return Select<UserDBO>("users_insert", parameters)?.FirstOrDefault();
         }
 
-        public UserDBO Update(UserDBO dbo)
+        public UserDBO Update(EditUser user)
         {
             Dictionary<string, object?> parameters = new()
             {
-                { "Id", dbo.Id },
-                { "Username", dbo.Username },
-                { "Password", dbo.Password },
-                { "FirstName", dbo.FirstName },
-                { "LastName", dbo.LastName },
-                { "IsAdmin", dbo.IsAdmin },
-                { "IsEditor", dbo.IsEditor },
+                { "Id", user.Id },
+                { "Username", user.Username },
+                { "Password", user.Password },
+                { "FirstName", user.FirstName },
+                { "LastName", user.LastName },
+                { "IsAdmin", user.IsAdmin },
+                { "IsEditor", user.IsEditor },
             };
             return Select<UserDBO>("users_update", parameters)?.FirstOrDefault();
         }
