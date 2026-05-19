@@ -5,7 +5,7 @@ create or replace function public.users_update(
 	"Username" text,
 	"Password" text,
 	"FirstName" text,
-	"SecondName" text,
+	"LastName" text,
 	"IsAdmin" boolean,
 	"IsEditor" boolean
 )
@@ -15,7 +15,7 @@ as $$
 	set username = "Username",
 	    password = "Password",
 	    firstname = "FirstName",
-	    secondname = "SecondName",
+	    lastname = "LastName",
 	    isadmin = "IsAdmin",
 	    iseditor = "IsEditor"
 	where id = "Id";

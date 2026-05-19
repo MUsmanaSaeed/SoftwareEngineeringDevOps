@@ -3,7 +3,7 @@ CREATE TABLE users(
   username text not null UNIQUE,
   password text not null,
   firstname text not null,
-  secondname text not null,
+  lastname text not null,
   isadmin BOOLEAN not null DEFAULT FALSE,
   iseditor BOOLEAN not null DEFAULT FALSE
 );

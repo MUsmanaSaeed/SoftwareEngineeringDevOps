@@ -10,6 +10,7 @@ namespace Migrator.V1
             [
                 "TABLE_users",
                 "FUNC_users_listall",
+                "FUNC_users_getbyid",
                 "FUNC_users_getbyusername",
                 "FUNC_users_insert",
                 "FUNC_users_update",

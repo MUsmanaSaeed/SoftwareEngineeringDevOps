@@ -4,12 +4,12 @@ create or replace function public.users_insert(
 	"Username" text,
 	"Password" text,
 	"FirstName" text,
-	"SecondName" text,
+	"LastName" text,
 	"IsAdmin" boolean,
 	"IsEditor" boolean
 )
 returns void
 as $$
-	insert into users(username, password, firstname, secondname, isadmin, iseditor)
-	values ("Username", "Password", "FirstName", "SecondName", "IsAdmin", "IsEditor");
+	insert into users(username, password, firstname, lastname, isadmin, iseditor)
+	values ("Username", "Password", "FirstName", "LastName", "IsAdmin", "IsEditor");
 $$ language sql;
