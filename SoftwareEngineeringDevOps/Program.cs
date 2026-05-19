@@ -1,5 +1,9 @@
 using SoftwareEngineeringDevOps.Components;
 
+
+AppContext.SetSwitch("Npgsql.EnableStoredProcedureCompatMode", true);
+Migrator.Migrator.Migrate();
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.

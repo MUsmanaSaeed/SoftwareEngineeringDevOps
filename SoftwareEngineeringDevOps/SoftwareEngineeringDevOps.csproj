@@ -7,4 +7,20 @@
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
   </PropertyGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V1\Up\UPV1_FUNC_users_getbyusername.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V1\Up\UPV1_FUNC_users_delete.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V1\Up\UPV1_QUERY_users_insertadmin.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V1\Up\UPV1_FUNC_users_update.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V1\Up\UPV1_FUNC_users_insert.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V1\Up\UPV1_FUNC_users_listall.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V1\Up\UPV1_TABLE_users.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentMigrator" Version="8.0.1" />
+    <PackageReference Include="FluentMigrator.Runner" Version="8.0.1" />
+    <PackageReference Include="Npgsql" Version="10.0.2" />
+  </ItemGroup>
+
 </Project>
