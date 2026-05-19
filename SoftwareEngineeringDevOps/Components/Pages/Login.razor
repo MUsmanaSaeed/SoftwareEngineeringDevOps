@@ -64,7 +64,7 @@
 
             if (success)
             {
-                var target = string.IsNullOrWhiteSpace(ReturnUrl) ? "/" : ReturnUrl;
+                var target = IsLocalUrl(ReturnUrl) ? ReturnUrl! : "/";
                 HttpContext.Response.Redirect(target);
             }
             else
@@ -73,6 +73,16 @@
             }
         }
     }
+
+    /// <summary>
+    /// Validates that the URL is local (relative) to prevent open redirect attacks.
+    /// Rejects empty strings, absolute URLs, and protocol-relative URLs (//evil.com).
+    /// </summary>
+    private static bool IsLocalUrl(string? url) =>
+        !string.IsNullOrWhiteSpace(url)
+        && url.StartsWith('/')
+        && !url.StartsWith("//")
+        && !url.StartsWith("/\\");
 
     private sealed class LoginInputModel
     {

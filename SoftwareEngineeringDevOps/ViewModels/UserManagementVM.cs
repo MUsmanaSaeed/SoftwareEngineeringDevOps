@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using System.Text.RegularExpressions;
 using SoftwareEngineeringDevOps.Auth;
 using SoftwareEngineeringDevOps.Models;
 using SoftwareEngineeringDevOps.Persistence;
@@ -209,9 +208,9 @@ public sealed class UserManagementVM
             return false;
         }
 
-        if (!IsPasswordStrong(FormPassword))
+        if (!PasswordValidator.IsStrong(FormPassword))
         {
-            ErrorMessage = "Password must be at least 8 characters and include an uppercase letter, a digit, and a special character.";
+            ErrorMessage = PasswordValidator.StrengthMessage;
             return false;
         }
 
@@ -239,10 +238,4 @@ public sealed class UserManagementVM
         FormIsAdmin = false;
         FormIsEditor = false;
     }
-
-    private static bool IsPasswordStrong(string password) =>
-        password.Length >= 8
-        && Regex.IsMatch(password, "[A-Z]")
-        && Regex.IsMatch(password, "[0-9]")
-        && Regex.IsMatch(password, @"[^a-zA-Z0-9]");
 }

@@ -8,7 +8,8 @@ window.appTheme = {
 
     set: function (theme) {
         document.documentElement.setAttribute('data-bs-theme', theme);
-        document.cookie = this.cookieName + '=' + theme + '; path=/; max-age=31536000; SameSite=Strict';
+        const secure = location.protocol === 'https:' ? '; Secure' : '';
+        document.cookie = this.cookieName + '=' + theme + '; path=/; max-age=31536000; SameSite=Strict' + secure;
     },
 
     isDark: function () {
