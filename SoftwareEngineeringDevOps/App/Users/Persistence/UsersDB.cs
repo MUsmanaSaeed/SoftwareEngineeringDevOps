@@ -28,16 +28,16 @@ namespace SoftwareEngineeringDevOps.App.Users.Persistence
             return Select<UserDBO>("users_getbyusername", parameters)?.FirstOrDefault();
         }
 
-        public UserDBO Insert(UserDBO dbo)
+        public UserDBO Insert(NewUser user)
         {
             Dictionary<string, object?> parameters = new()
             {
-                { "Username", dbo.Username },
-                { "Password", dbo.Password },
-                { "FirstName", dbo.FirstName },
-                { "LastName", dbo.LastName },
-                { "IsAdmin", dbo.IsAdmin },
-                { "IsEditor", dbo.IsEditor },
+                { "Username", user.Username },
+                { "Password", user.Password },
+                { "FirstName", user.FirstName },
+                { "LastName", user.LastName },
+                { "IsAdmin", user.IsAdmin },
+                { "IsEditor", user.IsEditor },
             };
             return Select<UserDBO>("users_insert", parameters)?.FirstOrDefault();
         }

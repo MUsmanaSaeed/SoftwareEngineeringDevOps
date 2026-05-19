@@ -1,3 +1,4 @@
+using SoftwareEngineeringDevOps.App.Users;
 using SoftwareEngineeringDevOps.App.Users.Persistence;
 using SoftwareEngineeringDevOps.Components;
 
@@ -12,6 +13,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddSingleton<IUsersDB, UsersDB>();
+builder.Services.AddSingleton<IUsersMediator, UsersMediator>();
 
 var app = builder.Build();
 

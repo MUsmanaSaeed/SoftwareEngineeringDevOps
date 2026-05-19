@@ -7,7 +7,7 @@ namespace SoftwareEngineeringDevOps.App.Users.Persistence
         void Delete(long id);
         UserDBO? GetById(long id);
         UserDBO? GetByUsername(string username);
-        UserDBO Insert(UserDBO dbo);
+        UserDBO Insert(NewUser user);
         IEnumerable<UserDBO> ListAll();
         UserDBO Update(UserDBO dbo);
     }
