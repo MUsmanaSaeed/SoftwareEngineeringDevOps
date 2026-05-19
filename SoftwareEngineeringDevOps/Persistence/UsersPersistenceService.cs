@@ -1,3 +1,4 @@
+using System.Data;
 using Npgsql;
 using SoftwareEngineeringDevOps.Models;
 using SoftwareEngineeringDevOps.Persistence.DBO;
@@ -21,7 +22,10 @@ public sealed class UsersPersistenceService : IUsersPersistenceService
         await using var conn = new NpgsqlConnection(_connectionString);
         await conn.OpenAsync();
 
-        await using var cmd = new NpgsqlCommand("SELECT * FROM users_listall()", conn);
+        await using var cmd = new NpgsqlCommand("users_listall", conn)
+        {
+            CommandType = CommandType.StoredProcedure,
+        };
         await using var reader = await cmd.ExecuteReaderAsync();
 
         while (await reader.ReadAsync())
@@ -43,8 +47,10 @@ public sealed class UsersPersistenceService : IUsersPersistenceService
         await using var conn = new NpgsqlConnection(_connectionString);
         await conn.OpenAsync();
 
-        await using var cmd = new NpgsqlCommand(
-            "SELECT users_insert(@Username, @Password, @FirstName, @SecondName, @IsAdmin, @IsEditor)", conn);
+        await using var cmd = new NpgsqlCommand("users_insert", conn)
+        {
+            CommandType = CommandType.StoredProcedure,
+        };
 
         cmd.Parameters.AddWithValue("Username", username);
         cmd.Parameters.AddWithValue("Password", password);
@@ -68,8 +74,10 @@ public sealed class UsersPersistenceService : IUsersPersistenceService
         await using var conn = new NpgsqlConnection(_connectionString);
         await conn.OpenAsync();
 
-        await using var cmd = new NpgsqlCommand(
-            "SELECT users_update(@Id, @Username, @Password, @FirstName, @SecondName, @IsAdmin, @IsEditor)", conn);
+        await using var cmd = new NpgsqlCommand("users_update", conn)
+        {
+            CommandType = CommandType.StoredProcedure,
+        };
 
         cmd.Parameters.AddWithValue("Id", id);
         cmd.Parameters.AddWithValue("Username", username);
@@ -106,7 +114,10 @@ public sealed class UsersPersistenceService : IUsersPersistenceService
         await using var conn = new NpgsqlConnection(_connectionString);
         await conn.OpenAsync();
 
-        await using var cmd = new NpgsqlCommand("SELECT users_delete(@Id)", conn);
+        await using var cmd = new NpgsqlCommand("users_delete", conn)
+        {
+            CommandType = CommandType.StoredProcedure,
+        };
         cmd.Parameters.AddWithValue("Id", id);
 
         await cmd.ExecuteNonQueryAsync();
@@ -117,7 +128,10 @@ public sealed class UsersPersistenceService : IUsersPersistenceService
         await using var conn = new NpgsqlConnection(_connectionString);
         await conn.OpenAsync();
 
-        await using var cmd = new NpgsqlCommand("SELECT users_enable(@Id)", conn);
+        await using var cmd = new NpgsqlCommand("users_enable", conn)
+        {
+            CommandType = CommandType.StoredProcedure,
+        };
         cmd.Parameters.AddWithValue("Id", id);
 
         await cmd.ExecuteNonQueryAsync();
@@ -128,7 +142,10 @@ public sealed class UsersPersistenceService : IUsersPersistenceService
         await using var conn = new NpgsqlConnection(_connectionString);
         await conn.OpenAsync();
 
-        await using var cmd = new NpgsqlCommand("SELECT * FROM users_getbyusername(@Username)", conn);
+        await using var cmd = new NpgsqlCommand("users_getbyusername", conn)
+        {
+            CommandType = CommandType.StoredProcedure,
+        };
         cmd.Parameters.AddWithValue("Username", username);
 
         await using var reader = await cmd.ExecuteReaderAsync();
