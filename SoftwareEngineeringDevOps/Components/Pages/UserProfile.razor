@@ -1,0 +1,104 @@
+@page "/profile"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+<PageTitle>My Profile</PageTitle>
+
+<h1>My Profile</h1>
+
+@if (!VM.IsLoaded)
+{
+    <p>Loading...</p>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(VM.ErrorMessage))
+    {
+        <div class="alert alert-danger">@VM.ErrorMessage</div>
+    }
+
+    @if (!string.IsNullOrEmpty(VM.SuccessMessage))
+    {
+        <div class="alert alert-success">@VM.SuccessMessage</div>
+    }
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header"><strong>Profile Details</strong></div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" @bind="VM.Username" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">First Name</label>
+                        <input type="text" class="form-control" @bind="VM.FirstName" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Second Name</label>
+                        <input type="text" class="form-control" @bind="VM.SecondName" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Current Password <span class="text-muted">(required to save)</span></label>
+                        <input type="password" class="form-control" @bind="VM.CurrentPassword" autocomplete="current-password" />
+                    </div>
+                    <button class="btn btn-primary" @onclick="SaveProfileAsync">Save Profile</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header"><strong>Change Password</strong></div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Current Password</label>
+                        <input type="password" class="form-control" @bind="VM.CurrentPassword" autocomplete="current-password" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">New Password</label>
+                        <input type="password" class="form-control" @bind="VM.NewPassword" autocomplete="new-password" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirm New Password</label>
+                        <input type="password" class="form-control" @bind="VM.ConfirmPassword" autocomplete="new-password" />
+                    </div>
+                    <button class="btn btn-warning" @onclick="ChangePasswordAsync">Change Password</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-2 text-muted small">
+        <span>Roles: </span>
+        @if (VM.IsAdmin) { <span class="badge bg-danger me-1">Admin</span> }
+        @if (VM.IsEditor) { <span class="badge bg-primary me-1">Editor</span> }
+        @if (!VM.IsAdmin && !VM.IsEditor) { <span class="badge bg-secondary">Standard User</span> }
+        @if (VM.IsDeleted) { <span class="badge bg-dark ms-1">Account Disabled</span> }
+    </div>
+}
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    [Inject]
+    private UserProfileVM VM { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState;
+        await VM.InitializeAsync(state.User);
+    }
+
+    private async Task SaveProfileAsync()
+    {
+        await VM.SaveProfileAsync();
+    }
+
+    private async Task ChangePasswordAsync()
+    {
+        await VM.ChangePasswordAsync();
+    }
+}

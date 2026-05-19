@@ -1,7 +1,43 @@
 ﻿@page "/"
+@attribute [Authorize]
+@rendermode InteractiveServer
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+@if (VM is not null)
+{
+    <h1>Welcome, @VM.Username!</h1>
 
-Welcome to your new app.
+    <div class="mt-3">
+        <ul class="list-unstyled">
+            <li><strong>Role:</strong>
+                @if (VM.IsAdmin)
+                {
+                    <span class="badge bg-danger ms-1">Admin</span>
+                }
+                @if (VM.IsEditor)
+                {
+                    <span class="badge bg-primary ms-1">Editor</span>
+                }
+                @if (!VM.IsAdmin && !VM.IsEditor)
+                {
+                    <span class="badge bg-secondary ms-1">Standard User</span>
+                }
+            </li>
+        </ul>
+    </div>
+}
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; } = default!;
+
+    [Inject]
+    private HomeVM VM { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState;
+        VM.Initialize(state.User);
+    }
+}
