@@ -1,39 +1,21 @@
-using System.Data;
-using Npgsql;
+using SoftwareEngineeringDevOps.Database;
 using SoftwareEngineeringDevOps.Models;
 using SoftwareEngineeringDevOps.Persistence.DBO;
 
 namespace SoftwareEngineeringDevOps.Persistence;
 
-public sealed class UsersPersistenceService : IUsersPersistenceService
+public sealed class UsersPersistenceService : DB, IUsersPersistenceService
 {
-    private readonly string _connectionString;
-
     public UsersPersistenceService(IConfiguration configuration)
+        : base(configuration.GetConnectionString("DefaultConnection")
+               ?? throw new InvalidOperationException("Database connection string 'DefaultConnection' is not configured."))
     {
-        _connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException("Database connection string 'DefaultConnection' is not configured.");
     }
 
     public async Task<IEnumerable<User>> ListAllAsync()
     {
-        var results = new List<User>();
-
-        await using var conn = new NpgsqlConnection(_connectionString);
-        await conn.OpenAsync();
-
-        await using var cmd = new NpgsqlCommand("users_listall", conn)
-        {
-            CommandType = CommandType.StoredProcedure,
-        };
-        await using var reader = await cmd.ExecuteReaderAsync();
-
-        while (await reader.ReadAsync())
-        {
-            results.Add(MapToUser(ReadDbo(reader)));
-        }
-
-        return results;
+        var dbos = await SqlExecutor.SelectAsync<UserDBO>(ConnectionString, "users_listall");
+        return dbos.Select(MapToUser);
     }
 
     public async Task InsertAsync(
@@ -44,22 +26,15 @@ public sealed class UsersPersistenceService : IUsersPersistenceService
         bool isAdmin,
         bool isEditor)
     {
-        await using var conn = new NpgsqlConnection(_connectionString);
-        await conn.OpenAsync();
-
-        await using var cmd = new NpgsqlCommand("users_insert", conn)
+        await SqlExecutor.ExecuteAsync(ConnectionString, "users_insert", new Dictionary<string, object>
         {
-            CommandType = CommandType.StoredProcedure,
-        };
-
-        cmd.Parameters.AddWithValue("Username", username);
-        cmd.Parameters.AddWithValue("Password", password);
-        cmd.Parameters.AddWithValue("FirstName", firstName);
-        cmd.Parameters.AddWithValue("SecondName", secondName);
-        cmd.Parameters.AddWithValue("IsAdmin", isAdmin);
-        cmd.Parameters.AddWithValue("IsEditor", isEditor);
-
-        await cmd.ExecuteNonQueryAsync();
+            ["Username"] = username,
+            ["Password"] = password,
+            ["FirstName"] = firstName,
+            ["SecondName"] = secondName,
+            ["IsAdmin"] = isAdmin,
+            ["IsEditor"] = isEditor,
+        });
     }
 
     public async Task UpdateAsync(
@@ -71,23 +46,16 @@ public sealed class UsersPersistenceService : IUsersPersistenceService
         bool isAdmin,
         bool isEditor)
     {
-        await using var conn = new NpgsqlConnection(_connectionString);
-        await conn.OpenAsync();
-
-        await using var cmd = new NpgsqlCommand("users_update", conn)
+        await SqlExecutor.ExecuteAsync(ConnectionString, "users_update", new Dictionary<string, object>
         {
-            CommandType = CommandType.StoredProcedure,
-        };
-
-        cmd.Parameters.AddWithValue("Id", id);
-        cmd.Parameters.AddWithValue("Username", username);
-        cmd.Parameters.AddWithValue("Password", password);
-        cmd.Parameters.AddWithValue("FirstName", firstName);
-        cmd.Parameters.AddWithValue("SecondName", secondName);
-        cmd.Parameters.AddWithValue("IsAdmin", isAdmin);
-        cmd.Parameters.AddWithValue("IsEditor", isEditor);
-
-        await cmd.ExecuteNonQueryAsync();
+            ["Id"] = id,
+            ["Username"] = username,
+            ["Password"] = password,
+            ["FirstName"] = firstName,
+            ["SecondName"] = secondName,
+            ["IsAdmin"] = isAdmin,
+            ["IsEditor"] = isEditor,
+        });
     }
 
     public async Task<User?> GetByUsernameAsync(string username)
@@ -111,62 +79,29 @@ public sealed class UsersPersistenceService : IUsersPersistenceService
 
     public async Task DeleteAsync(long id)
     {
-        await using var conn = new NpgsqlConnection(_connectionString);
-        await conn.OpenAsync();
-
-        await using var cmd = new NpgsqlCommand("users_delete", conn)
+        await SqlExecutor.ExecuteAsync(ConnectionString, "users_delete", new Dictionary<string, object>
         {
-            CommandType = CommandType.StoredProcedure,
-        };
-        cmd.Parameters.AddWithValue("Id", id);
-
-        await cmd.ExecuteNonQueryAsync();
+            ["Id"] = id,
+        });
     }
 
     public async Task EnableAsync(long id)
     {
-        await using var conn = new NpgsqlConnection(_connectionString);
-        await conn.OpenAsync();
-
-        await using var cmd = new NpgsqlCommand("users_enable", conn)
+        await SqlExecutor.ExecuteAsync(ConnectionString, "users_enable", new Dictionary<string, object>
         {
-            CommandType = CommandType.StoredProcedure,
-        };
-        cmd.Parameters.AddWithValue("Id", id);
-
-        await cmd.ExecuteNonQueryAsync();
+            ["Id"] = id,
+        });
     }
 
     private async Task<UserDBO?> GetDboByUsernameAsync(string username)
     {
-        await using var conn = new NpgsqlConnection(_connectionString);
-        await conn.OpenAsync();
+        var dbos = await SqlExecutor.SelectAsync<UserDBO>(
+            ConnectionString,
+            "users_getbyusername",
+            new Dictionary<string, object> { ["Username"] = username });
 
-        await using var cmd = new NpgsqlCommand("users_getbyusername", conn)
-        {
-            CommandType = CommandType.StoredProcedure,
-        };
-        cmd.Parameters.AddWithValue("Username", username);
-
-        await using var reader = await cmd.ExecuteReaderAsync();
-
-        if (await reader.ReadAsync())
-            return ReadDbo(reader);
-
-        return null;
+        return dbos.FirstOrDefault();
     }
-
-    private static UserDBO ReadDbo(NpgsqlDataReader reader) => new()
-    {
-        id = reader.GetInt64(reader.GetOrdinal("id")),
-        username = reader.GetString(reader.GetOrdinal("username")),
-        password = reader.GetString(reader.GetOrdinal("password")),
-        firstname = reader.GetString(reader.GetOrdinal("firstname")),
-        secondname = reader.GetString(reader.GetOrdinal("secondname")),
-        isadmin = reader.GetBoolean(reader.GetOrdinal("isadmin")),
-        iseditor = reader.GetBoolean(reader.GetOrdinal("iseditor")),
-        isdeleted = reader.GetBoolean(reader.GetOrdinal("isdeleted")),
-    };
 
     private static User MapToUser(UserDBO dbo) => new()
     {
