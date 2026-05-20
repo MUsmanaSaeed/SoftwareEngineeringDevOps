@@ -8,6 +8,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Migrator\Migrations\000\00\V4\Up\UPV4_FUNC_brickorders_cancel.sql" />
+    <None Remove="Migrator\Migrations\000\00\V4\Up\UPV4_FUNC_brickorders_delete.sql" />
+    <None Remove="Migrator\Migrations\000\00\V4\Up\UPV4_FUNC_brickorders_getbyid.sql" />
+    <None Remove="Migrator\Migrations\000\00\V4\Up\UPV4_FUNC_brickorders_insert.sql" />
+    <None Remove="Migrator\Migrations\000\00\V4\Up\UPV4_FUNC_brickorders_listall.sql" />
+    <None Remove="Migrator\Migrations\000\00\V4\Up\UPV4_FUNC_brickorders_uncancel.sql" />
+    <None Remove="Migrator\Migrations\000\00\V4\Up\UPV4_FUNC_brickorders_update.sql" />
+    <None Remove="Migrator\Migrations\000\00\V4\Up\UPV4_TABLE_brickorders.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="Migrator\Migrations\000\00\V1\Up\UPV1_FUNC_users_getbyid.sql" />
     <EmbeddedResource Include="Migrator\Migrations\000\00\V1\Up\UPV1_FUNC_users_getbyusername.sql" />
     <EmbeddedResource Include="Migrator\Migrations\000\00\V1\Up\UPV1_FUNC_users_delete.sql" />
@@ -28,6 +39,14 @@
     <EmbeddedResource Include="Migrator\Migrations\000\00\V3\Up\UPV3_FUNC_bricks_listall.sql" />
     <EmbeddedResource Include="Migrator\Migrations\000\00\V3\Up\UPV3_FUNC_bricks_update.sql" />
     <EmbeddedResource Include="Migrator\Migrations\000\00\V3\Up\UPV3_TABLE_bricks.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V4\Up\UPV4_FUNC_brickorders_cancel.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V4\Up\UPV4_FUNC_brickorders_delete.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V4\Up\UPV4_FUNC_brickorders_getbyid.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V4\Up\UPV4_FUNC_brickorders_insert.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V4\Up\UPV4_FUNC_brickorders_listall.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V4\Up\UPV4_FUNC_brickorders_uncancel.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V4\Up\UPV4_FUNC_brickorders_update.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V4\Up\UPV4_TABLE_brickorders.sql" />
   </ItemGroup>
 
   <ItemGroup>

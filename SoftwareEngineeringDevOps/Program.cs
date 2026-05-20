@@ -1,3 +1,5 @@
+using SoftwareEngineeringDevOps.App.BrickOrders;
+using SoftwareEngineeringDevOps.App.BrickOrders.Persistence;
 using SoftwareEngineeringDevOps.App.Bricks;
 using SoftwareEngineeringDevOps.App.Bricks.Persistence;
 using SoftwareEngineeringDevOps.App.Manufacturers;
@@ -24,6 +26,9 @@ builder.Services.AddSingleton<IManufacturersMediator, ManufacturersMediator>();
 
 builder.Services.AddSingleton<IBricksDB, BricksDB>();
 builder.Services.AddSingleton<IBricksMediator, BricksMediator>();
+
+builder.Services.AddSingleton<IBrickOrdersDB, BrickOrdersDB>();
+builder.Services.AddSingleton<IBrickOrdersMediator, BrickOrdersMediator>();
 
 var app = builder.Build();
 
