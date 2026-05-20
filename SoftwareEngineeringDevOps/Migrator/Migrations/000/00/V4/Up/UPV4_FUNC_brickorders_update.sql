@@ -1,8 +1,7 @@
-DROP FUNCTION IF EXISTS public.brickorders_update(bigint, text, bigint, int, timestamp, timestamp);
+DROP FUNCTION IF EXISTS public.brickorders_update(bigint, bigint, int, timestamp, timestamp);
 
 create or replace function public.brickorders_update(
 	"Id" bigint,
-	"OrderNo" text,
 	"BrickId" bigint,
 	"BricksOrdered" int,
 	"OrderedDate" timestamp,
@@ -11,8 +10,7 @@ create or replace function public.brickorders_update(
 returns setof brickorders
 as $$
 	update brickorders
-	set orderno = "OrderNo",
-		brickid = "BrickId",
+	set brickid = "BrickId",
 		bricksordered = "BricksOrdered",
 		ordereddate = "OrderedDate",
 		expecteddate = "ExpectedDate"

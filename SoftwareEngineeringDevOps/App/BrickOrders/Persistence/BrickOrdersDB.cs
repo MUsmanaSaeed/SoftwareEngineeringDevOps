@@ -37,7 +37,6 @@ namespace SoftwareEngineeringDevOps.App.BrickOrders.Persistence
             Dictionary<string, object?> parameters = new()
             {
                 { "Id", brickOrder.Id },
-                { "OrderNo", brickOrder.OrderNo },
                 { "BrickId", brickOrder.BrickId },
                 { "BricksOrdered", brickOrder.BricksOrdered },
                 { "OrderedDate", brickOrder.OrderedDate.ToUniversalTime() },

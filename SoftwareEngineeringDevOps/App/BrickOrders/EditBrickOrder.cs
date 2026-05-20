@@ -11,7 +11,7 @@ namespace SoftwareEngineeringDevOps.App.BrickOrders
         IBrickOrder BrickOrder { get; }
 
         public long Id => BrickOrder.Id;
-        public string OrderNo { get; set; }
+        public string OrderNo => BrickOrder.OrderNo;
         public long BrickId { get; set; }
         public int BricksOrdered { get; set; }
         public DateTime OrderedDate { get; set; }
@@ -19,7 +19,6 @@ namespace SoftwareEngineeringDevOps.App.BrickOrders
 
         public void ResetValues()
         {
-            OrderNo = BrickOrder.OrderNo;
             BrickId = BrickOrder.BrickId;
             BricksOrdered = BrickOrder.BricksOrdered;
             OrderedDate = BrickOrder.OrderedDate;
