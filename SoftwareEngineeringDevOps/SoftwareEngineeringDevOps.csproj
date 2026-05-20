@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -16,6 +16,12 @@
     <EmbeddedResource Include="Migrator\Migrations\000\00\V1\Up\UPV1_FUNC_users_insert.sql" />
     <EmbeddedResource Include="Migrator\Migrations\000\00\V1\Up\UPV1_FUNC_users_listall.sql" />
     <EmbeddedResource Include="Migrator\Migrations\000\00\V1\Up\UPV1_TABLE_users.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V2\Up\UPV2_FUNC_manufacturers_delete.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V2\Up\UPV2_FUNC_manufacturers_getbyid.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V2\Up\UPV2_FUNC_manufacturers_insert.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V2\Up\UPV2_FUNC_manufacturers_listall.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V2\Up\UPV2_FUNC_manufacturers_update.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V2\Up\UPV2_TABLE_manufacturers.sql" />
   </ItemGroup>
 
   <ItemGroup>

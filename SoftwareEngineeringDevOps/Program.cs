@@ -1,3 +1,5 @@
+using SoftwareEngineeringDevOps.App.Manufacturers;
+using SoftwareEngineeringDevOps.App.Manufacturers.Persistence;
 using SoftwareEngineeringDevOps.App.Users;
 using SoftwareEngineeringDevOps.App.Users.Persistence;
 using SoftwareEngineeringDevOps.Components;
@@ -14,6 +16,9 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddSingleton<IUsersDB, UsersDB>();
 builder.Services.AddSingleton<IUsersMediator, UsersMediator>();
+
+builder.Services.AddSingleton<IManufacturersDB, ManufacturersDB>();
+builder.Services.AddSingleton<IManufacturersMediator, ManufacturersMediator>();
 
 var app = builder.Build();
 
