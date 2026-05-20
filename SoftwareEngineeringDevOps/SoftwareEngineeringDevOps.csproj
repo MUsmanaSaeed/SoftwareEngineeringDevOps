@@ -22,6 +22,12 @@
     <EmbeddedResource Include="Migrator\Migrations\000\00\V2\Up\UPV2_FUNC_manufacturers_listall.sql" />
     <EmbeddedResource Include="Migrator\Migrations\000\00\V2\Up\UPV2_FUNC_manufacturers_update.sql" />
     <EmbeddedResource Include="Migrator\Migrations\000\00\V2\Up\UPV2_TABLE_manufacturers.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V3\Up\UPV3_FUNC_bricks_delete.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V3\Up\UPV3_FUNC_bricks_getbyid.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V3\Up\UPV3_FUNC_bricks_insert.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V3\Up\UPV3_FUNC_bricks_listall.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V3\Up\UPV3_FUNC_bricks_update.sql" />
+    <EmbeddedResource Include="Migrator\Migrations\000\00\V3\Up\UPV3_TABLE_bricks.sql" />
   </ItemGroup>
 
   <ItemGroup>
