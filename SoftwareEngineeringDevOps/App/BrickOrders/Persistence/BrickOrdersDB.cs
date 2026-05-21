@@ -28,6 +28,7 @@ namespace SoftwareEngineeringDevOps.App.BrickOrders.Persistence
                 { "BricksOrdered", brickOrder.BricksOrdered },
                 { "OrderedDate", brickOrder.OrderedDate.ToUniversalTime() },
                 { "ExpectedDate", brickOrder.ExpectedDate.ToUniversalTime() },
+                { "CreatedById", brickOrder.CreatedById },
             };
             return Select<BrickOrderDBO>("brickorders_insert", parameters)?.FirstOrDefault();
         }

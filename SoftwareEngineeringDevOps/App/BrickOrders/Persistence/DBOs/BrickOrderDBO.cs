@@ -9,5 +9,6 @@ namespace SoftwareEngineeringDevOps.App.BrickOrders.Persistence.DBOs
         public DateTime OrderedDate { get; set; }
         public DateTime ExpectedDate { get; set; }
         public DateTime? CancelledDate { get; set; }
+        public long CreatedById { get; set; }
     }
 }

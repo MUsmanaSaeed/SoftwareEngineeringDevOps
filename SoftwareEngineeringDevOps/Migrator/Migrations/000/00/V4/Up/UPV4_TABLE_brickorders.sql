@@ -5,5 +5,6 @@ CREATE TABLE brickorders(
   bricksordered int not null default 0,
   ordereddate timestamp not null,
   expecteddate timestamp not null,
-  cancelleddate timestamp null default null
+  cancelleddate timestamp null default null,
+  createdbyid bigint not null references users(id)
 );

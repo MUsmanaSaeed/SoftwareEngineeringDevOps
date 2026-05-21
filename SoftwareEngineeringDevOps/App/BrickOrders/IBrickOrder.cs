@@ -1,3 +1,5 @@
+using SoftwareEngineeringDevOps.App.Users;
+
 namespace SoftwareEngineeringDevOps.App.BrickOrders
 {
     public interface IBrickOrder
@@ -9,5 +11,6 @@ namespace SoftwareEngineeringDevOps.App.BrickOrders
         DateTime OrderedDate { get; }
         DateTime ExpectedDate { get; }
         DateTime? CancelledDate { get; }
+        IUserInfo CreatedBy { get; }
     }
 }

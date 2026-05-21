@@ -1,10 +1,11 @@
 using SoftwareEngineeringDevOps.App.BrickOrders.Persistence.DBOs;
+using SoftwareEngineeringDevOps.App.Users;
 
 namespace SoftwareEngineeringDevOps.App.BrickOrders
 {
     public class BrickOrder : IBrickOrder
     {
-        public static BrickOrder FromDBO(BrickOrderDBO dbo)
+        public static BrickOrder FromDBO(BrickOrderDBO dbo, IUserInfo createdBy)
         {
             return new BrickOrder
             {
@@ -15,6 +16,7 @@ namespace SoftwareEngineeringDevOps.App.BrickOrders
                 OrderedDate = dbo.OrderedDate.ToUkTime(),
                 ExpectedDate = dbo.ExpectedDate.ToUkTime(),
                 CancelledDate = dbo.CancelledDate?.ToUkTime(),
+                CreatedBy = createdBy,
             };
         }
 
@@ -25,5 +27,6 @@ namespace SoftwareEngineeringDevOps.App.BrickOrders
         public DateTime OrderedDate { get; private set; }
         public DateTime ExpectedDate { get; private set; }
         public DateTime? CancelledDate { get; private set; }
+        public IUserInfo CreatedBy { get; private set; }
     }
 }

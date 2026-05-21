@@ -1,3 +1,5 @@
+using SoftwareEngineeringDevOps.App.Users;
+
 namespace SoftwareEngineeringDevOps.App.BrickOrdersReceived
 {
     public interface IBrickOrderReceived
@@ -6,5 +8,6 @@ namespace SoftwareEngineeringDevOps.App.BrickOrdersReceived
         long BrickOrderId { get; }
         int BricksReceived { get; }
         DateTime ReceivedDate { get; }
+        IUserInfo ReceivedBy { get; }
     }
 }

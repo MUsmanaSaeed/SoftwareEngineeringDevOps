@@ -26,6 +26,7 @@ namespace SoftwareEngineeringDevOps.App.BrickOrdersReceived.Persistence
                 { "BrickOrderId", brickOrderReceived.BrickOrderId },
                 { "BricksReceived", brickOrderReceived.BricksReceived },
                 { "ReceivedDate", brickOrderReceived.ReceivedDate.ToUniversalTime() },
+                { "ReceivedById", brickOrderReceived.ReceivedById },
             };
             return Select<BrickOrderReceivedDBO>("brickordersreceived_insert", parameters)?.FirstOrDefault();
         }
