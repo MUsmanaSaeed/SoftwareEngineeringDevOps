@@ -1,9 +1,7 @@
 namespace SoftwareEngineeringDevOps.App.Manufacturers
 {
-    public interface IManufacturer
+    public interface IManufacturer : IManufacturerInfo
     {
-        long Id { get; }
-        string Name { get; }
         string Address1 { get; }
         string? Address2 { get; }
         string Postcode { get; }

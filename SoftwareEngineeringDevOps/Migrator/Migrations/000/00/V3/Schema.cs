@@ -11,6 +11,7 @@ namespace Migrator.V3
                 "TABLE_bricks",
                 "FUNC_bricks_listall",
                 "FUNC_bricks_getbyid",
+                "FUNC_bricks_getbymanufacturerid",
                 "FUNC_bricks_insert",
                 "FUNC_bricks_update",
                 "FUNC_bricks_delete",

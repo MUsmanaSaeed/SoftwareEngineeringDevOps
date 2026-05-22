@@ -33,6 +33,12 @@ namespace SoftwareEngineeringDevOps.App.BrickOrdersReceived
             return dbo == null ? null : BrickOrderReceived.FromDBO(dbo, GetUser(dbo.ReceivedById));
         }
 
+        public async Task<IEnumerable<IBrickOrderReceived>> GetBrickOrdersReceivedByBrickOrderId(long brickOrderId)
+        {
+            await Task.CompletedTask;
+            return Db.GetByBrickOrderId(brickOrderId).Select(dbo => BrickOrderReceived.FromDBO(dbo, GetUser(dbo.ReceivedById)));
+        }
+
         public async Task<IBrickOrderReceived> Insert(NewBrickOrderReceived brickOrderReceived)
         {
             await Task.CompletedTask;

@@ -19,6 +19,15 @@ namespace SoftwareEngineeringDevOps.App.BrickOrders.Persistence
             return Select<BrickOrderDBO>("brickorders_getbyid", parameters)?.FirstOrDefault();
         }
 
+        public IEnumerable<BrickOrderDBO> GetByBrickId(long brickId)
+        {
+            Dictionary<string, object?> parameters = new()
+            {
+                { "BrickId", brickId },
+            };
+            return Select<BrickOrderDBO>("brickorders_getbybrickid", parameters) ?? [];
+        }
+
         public BrickOrderDBO Insert(NewBrickOrder brickOrder)
         {
             Dictionary<string, object?> parameters = new()

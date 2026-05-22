@@ -19,6 +19,15 @@ namespace SoftwareEngineeringDevOps.App.Bricks.Persistence
             return Select<BrickDBO>("bricks_getbyid", parameters)?.FirstOrDefault();
         }
 
+        public IEnumerable<BrickDBO> GetByManufacturerId(long manufacturerId)
+        {
+            Dictionary<string, object?> parameters = new()
+            {
+                { "ManufacturerId", manufacturerId },
+            };
+            return Select<BrickDBO>("bricks_getbymanufacturerid", parameters) ?? [];
+        }
+
         public BrickDBO Insert(NewBrick brick)
         {
             Dictionary<string, object?> parameters = new()

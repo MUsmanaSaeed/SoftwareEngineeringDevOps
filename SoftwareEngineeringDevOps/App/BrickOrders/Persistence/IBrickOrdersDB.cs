@@ -6,6 +6,7 @@ namespace SoftwareEngineeringDevOps.App.BrickOrders.Persistence
     {
         IEnumerable<BrickOrderDBO> ListAll();
         BrickOrderDBO? GetById(long id);
+        IEnumerable<BrickOrderDBO> GetByBrickId(long brickId);
         BrickOrderDBO Insert(NewBrickOrder brickOrder);
         BrickOrderDBO Update(EditBrickOrder brickOrder);
         BrickOrderDBO Cancel(long id, DateTime cancelledDate);

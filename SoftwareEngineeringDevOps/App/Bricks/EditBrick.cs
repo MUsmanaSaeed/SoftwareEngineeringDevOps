@@ -26,7 +26,7 @@ namespace SoftwareEngineeringDevOps.App.Bricks
         public void ResetValues()
         {
             Name = Brick.Name;
-            ManufacturerId = Brick.ManufacturerId;
+            ManufacturerId = Brick.Manufacturer.Id;
             Price = Brick.Price;
             Colour = Brick.Colour;
             Material = Brick.Material;

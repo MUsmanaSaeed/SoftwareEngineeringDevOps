@@ -1,10 +1,12 @@
+using SoftwareEngineeringDevOps.App.Manufacturers;
+
 namespace SoftwareEngineeringDevOps.App.Bricks
 {
     public interface IBrick
     {
         long Id { get; }
         string Name { get; }
-        long ManufacturerId { get; }
+        IManufacturerInfo Manufacturer { get; }
         decimal Price { get; }
         string Colour { get; }
         string Material { get; }

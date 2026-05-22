@@ -6,6 +6,7 @@ namespace SoftwareEngineeringDevOps.App.Bricks.Persistence
     {
         IEnumerable<BrickDBO> ListAll();
         BrickDBO? GetById(long id);
+        IEnumerable<BrickDBO> GetByManufacturerId(long manufacturerId);
         BrickDBO Insert(NewBrick brick);
         BrickDBO Update(EditBrick brick);
         void Delete(long id);

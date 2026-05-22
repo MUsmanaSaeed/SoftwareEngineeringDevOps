@@ -1,16 +1,17 @@
 using SoftwareEngineeringDevOps.App.Bricks.Persistence.DBOs;
+using SoftwareEngineeringDevOps.App.Manufacturers;
 
 namespace SoftwareEngineeringDevOps.App.Bricks
 {
     public class Brick : IBrick
     {
-        public static Brick FromDBO(BrickDBO dbo)
+        public static Brick FromDBO(BrickDBO dbo, IManufacturerInfo manufacturer)
         {
             return new Brick
             {
                 Id = dbo.Id,
                 Name = dbo.Name,
-                ManufacturerId = dbo.ManufacturerId,
+                Manufacturer = manufacturer,
                 Price = dbo.Price,
                 Colour = dbo.Colour,
                 Material = dbo.Material,
@@ -25,7 +26,7 @@ namespace SoftwareEngineeringDevOps.App.Bricks
 
         public long Id { get; private set; }
         public string Name { get; private set; }
-        public long ManufacturerId { get; private set; }
+        public IManufacturerInfo Manufacturer { get; private set; }
         public decimal Price { get; private set; }
         public string Colour { get; private set; }
         public string Material { get; private set; }
