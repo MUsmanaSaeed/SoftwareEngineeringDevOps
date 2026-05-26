@@ -1,0 +1,290 @@
+@page "/manufacturers"
+@inject SoftwareEngineeringDevOps.App.Auth.IAuthService AuthService
+@inject SoftwareEngineeringDevOps.App.Manufacturers.IManufacturersMediator ManufacturersMediator
+@inject SoftwareEngineeringDevOps.App.Bricks.IBricksMediator BricksMediator
+@inject SoftwareEngineeringDevOps.App.BrickOrders.IBrickOrdersMediator OrdersMediator
+@inject NavigationManager Navigation
+
+<PageTitle>Manufacturers</PageTitle>
+
+<div class="split-layout">
+    <div class="split-left">
+        <div class="panel-header">
+            <h3>Manufacturers</h3>
+            @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanCreate(ViewModel.CurrentUserRole))
+            {
+                <button class="btn btn-add" @onclick="ViewModel.OpenAddModal">
+                    <span class="icon">&#xE710;</span>
+                </button>
+            }
+        </div>
+        <div class="data-table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var manufacturer in ViewModel.Manufacturers)
+                    {
+                        <tr class="@(ViewModel.SelectedManufacturer?.Id == manufacturer.Id ? "selected" : "")"
+                            @onclick="() => HandleSelect(manufacturer)">
+                            <td>@manufacturer.Name</td>
+                            <td>@manufacturer.Email</td>
+                            <td>@manufacturer.PhoneNo</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="split-right">
+        @if (ViewModel.SelectedManufacturer != null)
+        {
+            <div class="detail-panel">
+                <div class="detail-header">
+                    <h3>@ViewModel.SelectedManufacturer.Name</h3>
+                    <div class="detail-actions">
+                        @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanEdit(ViewModel.CurrentUserRole))
+                        {
+                            <button class="btn btn-edit" @onclick="() => ViewModel.OpenEditModal(ViewModel.SelectedManufacturer)">
+                                <span class="icon">&#xE70F;</span>
+                            </button>
+                        }
+                        @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanDelete(ViewModel.CurrentUserRole))
+                        {
+                            <button class="btn btn-delete" @onclick="() => HandleOpenDelete(ViewModel.SelectedManufacturer)">
+                                <span class="icon">&#xE74D;</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+                <div class="detail-body">
+                    <div class="detail-row"><span class="label">Address:</span><span>@ViewModel.SelectedManufacturer.Address1</span></div>
+                    @if (!string.IsNullOrEmpty(ViewModel.SelectedManufacturer.Address2))
+                    {
+                        <div class="detail-row"><span class="label"></span><span>@ViewModel.SelectedManufacturer.Address2</span></div>
+                    }
+                    <div class="detail-row"><span class="label">Postcode:</span><span>@ViewModel.SelectedManufacturer.Postcode</span></div>
+                    <div class="detail-row"><span class="label">Phone:</span><span>@ViewModel.SelectedManufacturer.PhoneNo</span></div>
+                    <div class="detail-row"><span class="label">Email:</span><span>@ViewModel.SelectedManufacturer.Email</span></div>
+                </div>
+                <div class="detail-section">
+                    <h4>Bricks</h4>
+                    <div class="brick-list">
+                        @foreach (var brick in ViewModel.SelectedManufacturerBricks)
+                        {
+                            <a class="brick-link" href="/bricks?id=@brick.Id">@brick.Name</a>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="empty-detail">
+                <p>Select a manufacturer to view details</p>
+            </div>
+        }
+    </div>
+</div>
+
+@* Add Manufacturer Modal *@
+@if (ViewModel.ShowAddModal)
+{
+    <div class="modal-overlay" @onclick="ViewModel.CloseAddModal">
+        <div class="modal" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h4>Add Manufacturer</h4>
+                <button class="btn-close" @onclick="ViewModel.CloseAddModal"><span class="icon">&#xE711;</span></button>
+            </div>
+            <div class="modal-body">
+                @if (ViewModel.ValidationErrors.Count > 0)
+                {
+                    <div class="alert alert-error">
+                        <ul>@foreach (var e in ViewModel.ValidationErrors) { <li>@e</li> }</ul>
+                    </div>
+                }
+                <div class="form-group">
+                    <label>Name</label>
+                    <input class="form-input" @bind="ViewModel.NewManufacturerModel.Name" />
+                </div>
+                <div class="form-group">
+                    <label>Address Line 1</label>
+                    <input class="form-input" @bind="ViewModel.NewManufacturerModel.Address1" />
+                </div>
+                <div class="form-group">
+                    <label>Address Line 2</label>
+                    <input class="form-input" @bind="ViewModel.NewManufacturerModel.Address2" />
+                </div>
+                <div class="form-group">
+                    <label>Postcode</label>
+                    <input class="form-input" @bind="ViewModel.NewManufacturerModel.Postcode" />
+                </div>
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input class="form-input" @bind="ViewModel.NewManufacturerModel.PhoneNo" />
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input class="form-input" type="email" @bind="ViewModel.NewManufacturerModel.Email" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" @onclick="ViewModel.CloseAddModal">Cancel</button>
+                <button class="btn btn-add" @onclick="HandleAdd">Save</button>
+            </div>
+        </div>
+    </div>
+}
+
+@* Edit Manufacturer Modal *@
+@if (ViewModel.ShowEditModal && ViewModel.EditManufacturerModel != null)
+{
+    <div class="modal-overlay" @onclick="ViewModel.CloseEditModal">
+        <div class="modal" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h4>Edit Manufacturer</h4>
+                <button class="btn-close" @onclick="ViewModel.CloseEditModal"><span class="icon">&#xE711;</span></button>
+            </div>
+            <div class="modal-body">
+                @if (ViewModel.ValidationErrors.Count > 0)
+                {
+                    <div class="alert alert-error">
+                        <ul>@foreach (var e in ViewModel.ValidationErrors) { <li>@e</li> }</ul>
+                    </div>
+                }
+                <div class="form-group">
+                    <label>Name</label>
+                    <input class="form-input" @bind="ViewModel.EditManufacturerModel.Name" />
+                </div>
+                <div class="form-group">
+                    <label>Address Line 1</label>
+                    <input class="form-input" @bind="ViewModel.EditManufacturerModel.Address1" />
+                </div>
+                <div class="form-group">
+                    <label>Address Line 2</label>
+                    <input class="form-input" @bind="ViewModel.EditManufacturerModel.Address2" />
+                </div>
+                <div class="form-group">
+                    <label>Postcode</label>
+                    <input class="form-input" @bind="ViewModel.EditManufacturerModel.Postcode" />
+                </div>
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input class="form-input" @bind="ViewModel.EditManufacturerModel.PhoneNo" />
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input class="form-input" type="email" @bind="ViewModel.EditManufacturerModel.Email" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" @onclick="ViewModel.CloseEditModal">Cancel</button>
+                <button class="btn btn-edit" @onclick="HandleUpdate">Save</button>
+            </div>
+        </div>
+    </div>
+}
+
+@* Delete Confirm Modal *@
+@if (ViewModel.ShowDeleteConfirm && ViewModel.SelectedManufacturer != null)
+{
+    <div class="modal-overlay" @onclick="ViewModel.CloseDeleteConfirm">
+        <div class="modal modal-sm" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h4>Confirm Deletion</h4>
+                <button class="btn-close" @onclick="ViewModel.CloseDeleteConfirm"><span class="icon">&#xE711;</span></button>
+            </div>
+            <div class="modal-body">
+                @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+                {
+                    <div class="alert alert-error">@ViewModel.ErrorMessage</div>
+                }
+                <p>Are you sure you want to delete <strong>@ViewModel.SelectedManufacturer.Name</strong>?</p>
+                @if (ViewModel.ChildBrickNames.Count > 0)
+                {
+                    <p>The following bricks will also be removed:</p>
+                    <ul>
+                        @foreach (var name in ViewModel.ChildBrickNames)
+                        {
+                            <li class="@(ViewModel.DeletionBlockedBricks.Contains(name) ? "text-danger" : "")">
+                                @name
+                                @if (ViewModel.DeletionBlockedBricks.Contains(name))
+                                {
+                                    <span>(has active orders - blocked)</span>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" @onclick="ViewModel.CloseDeleteConfirm">Cancel</button>
+                <button class="btn btn-delete" @onclick="HandleDelete" disabled="@(ViewModel.DeletionBlockedBricks.Count > 0)">Delete</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private Components.ViewModels.ManufacturersViewModel ViewModel { get; set; } = null!;
+
+    [SupplyParameterFromQuery(Name = "action")]
+    public string? Action { get; set; }
+
+    [SupplyParameterFromQuery(Name = "id")]
+    public long? SelectedId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        ViewModel = new Components.ViewModels.ManufacturersViewModel(ManufacturersMediator, BricksMediator, OrdersMediator, AuthService);
+        await ViewModel.LoadManufacturers();
+
+        if (SelectedId.HasValue)
+        {
+            var m = ViewModel.Manufacturers.FirstOrDefault(x => x.Id == SelectedId.Value);
+            if (m != null)
+            {
+                await ViewModel.SelectManufacturer(m);
+                if (Action == "edit") ViewModel.OpenEditModal(m);
+                else if (Action == "delete") await ViewModel.OpenDeleteConfirm(m);
+            }
+        }
+        else if (Action == "add")
+        {
+            ViewModel.OpenAddModal();
+        }
+    }
+
+    private async Task HandleSelect(global::SoftwareEngineeringDevOps.App.Manufacturers.IManufacturer manufacturer)
+    {
+        await ViewModel.SelectManufacturer(manufacturer);
+    }
+
+    private async Task HandleOpenDelete(global::SoftwareEngineeringDevOps.App.Manufacturers.IManufacturer manufacturer)
+    {
+        await ViewModel.OpenDeleteConfirm(manufacturer);
+    }
+
+    private async Task HandleAdd()
+    {
+        var success = await ViewModel.AddManufacturer();
+        if (success) Navigation.NavigateTo("/manufacturers", forceLoad: false, replace: true);
+    }
+
+    private async Task HandleUpdate()
+    {
+        var success = await ViewModel.UpdateManufacturer();
+        if (success) Navigation.NavigateTo("/manufacturers", forceLoad: false, replace: true);
+    }
+
+    private async Task HandleDelete()
+    {
+        var success = await ViewModel.DeleteManufacturer();
+        if (success) Navigation.NavigateTo("/manufacturers", forceLoad: false, replace: true);
+    }
+}

@@ -1,0 +1,260 @@
+@page "/users"
+@inject SoftwareEngineeringDevOps.App.Auth.IAuthService AuthService
+@inject SoftwareEngineeringDevOps.App.Users.IUsersMediator UsersMediator
+@inject NavigationManager Navigation
+
+<PageTitle>Users</PageTitle>
+
+@if (AuthService.CurrentUser?.IsAdmin != true)
+{
+    Navigation.NavigateTo("/", forceLoad: false);
+    return;
+}
+
+<div class="split-layout">
+    <div class="split-left">
+        <div class="panel-header">
+            <h3>Users</h3>
+            <button class="btn btn-add" @onclick="ViewModel.OpenAddModal">
+                <span class="icon">&#xE710;</span>
+            </button>
+        </div>
+        <div class="data-table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Name</th>
+                        <th>Role</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in ViewModel.Users)
+                    {
+                        <tr class="@(ViewModel.SelectedUser?.Id == user.Id ? "selected" : "")"
+                            @onclick="() => ViewModel.SelectUser(user)">
+                            <td>@user.Username</td>
+                            <td>@user.FirstName @user.LastName</td>
+                            <td>@(user.IsAdmin ? "Admin" : user.IsEditor ? "Editor" : "Standard")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="split-right">
+        @if (ViewModel.SelectedUser != null)
+        {
+            <div class="detail-panel">
+                <div class="detail-header">
+                    <h3>@ViewModel.SelectedUser.FirstName @ViewModel.SelectedUser.LastName</h3>
+                    <div class="detail-actions">
+                        <button class="btn btn-edit" @onclick="() => ViewModel.OpenEditModal(ViewModel.SelectedUser)">
+                            <span class="icon">&#xE70F;</span>
+                        </button>
+                        @if (ViewModel.SelectedUser.Id != ViewModel.CurrentUserId)
+                        {
+                            <button class="btn btn-delete" @onclick="() => ViewModel.OpenDeleteConfirm(ViewModel.SelectedUser)">
+                                <span class="icon">&#xE74D;</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+                <div class="detail-body">
+                    <div class="detail-row"><span class="label">Username:</span><span>@ViewModel.SelectedUser.Username</span></div>
+                    <div class="detail-row"><span class="label">First Name:</span><span>@ViewModel.SelectedUser.FirstName</span></div>
+                    <div class="detail-row"><span class="label">Last Name:</span><span>@ViewModel.SelectedUser.LastName</span></div>
+                    <div class="detail-row"><span class="label">Admin:</span><span>@(ViewModel.SelectedUser.IsAdmin ? "Yes" : "No")</span></div>
+                    <div class="detail-row"><span class="label">Editor:</span><span>@(ViewModel.SelectedUser.IsEditor ? "Yes" : "No")</span></div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="empty-detail">
+                <p>Select a user to view details</p>
+            </div>
+        }
+    </div>
+</div>
+
+@* Add User Modal *@
+@if (ViewModel.ShowAddModal)
+{
+    <div class="modal-overlay" @onclick="ViewModel.CloseAddModal">
+        <div class="modal" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h4>Add User</h4>
+                <button class="btn-close" @onclick="ViewModel.CloseAddModal"><span class="icon">&#xE711;</span></button>
+            </div>
+            <div class="modal-body">
+                @if (ViewModel.ValidationErrors.Count > 0)
+                {
+                    <div class="alert alert-error">
+                        <ul>@foreach (var e in ViewModel.ValidationErrors) { <li>@e</li> }</ul>
+                    </div>
+                }
+                <div class="form-group">
+                    <label>Username</label>
+                    <input class="form-input" @bind="ViewModel.NewUserModel.Username" />
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input class="form-input" type="password" @bind="ViewModel.NewUserModel.Password" />
+                </div>
+                <div class="form-group">
+                    <label>First Name</label>
+                    <input class="form-input" @bind="ViewModel.NewUserModel.FirstName" />
+                </div>
+                <div class="form-group">
+                    <label>Last Name</label>
+                    <input class="form-input" @bind="ViewModel.NewUserModel.LastName" />
+                </div>
+                <div class="form-group form-check">
+                    <input type="checkbox" @bind="ViewModel.NewUserModel.IsAdmin" id="newIsAdmin" />
+                    <label for="newIsAdmin">Admin</label>
+                </div>
+                <div class="form-group form-check">
+                    <input type="checkbox" @bind="ViewModel.NewUserModel.IsEditor" id="newIsEditor" />
+                    <label for="newIsEditor">Editor</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" @onclick="ViewModel.CloseAddModal">Cancel</button>
+                <button class="btn btn-add" @onclick="HandleAddUser">Save</button>
+            </div>
+        </div>
+    </div>
+}
+
+@* Edit User Modal *@
+@if (ViewModel.ShowEditModal && ViewModel.EditUserModel != null)
+{
+    <div class="modal-overlay" @onclick="ViewModel.CloseEditModal">
+        <div class="modal" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h4>Edit User</h4>
+                <button class="btn-close" @onclick="ViewModel.CloseEditModal"><span class="icon">&#xE711;</span></button>
+            </div>
+            <div class="modal-body">
+                @if (ViewModel.ValidationErrors.Count > 0)
+                {
+                    <div class="alert alert-error">
+                        <ul>@foreach (var e in ViewModel.ValidationErrors) { <li>@e</li> }</ul>
+                    </div>
+                }
+                <div class="form-group">
+                    <label>Username</label>
+                    <input class="form-input" @bind="ViewModel.EditUserModel.Username" />
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input class="form-input" type="password" @bind="ViewModel.EditUserModel.Password" />
+                </div>
+                <div class="form-group">
+                    <label>First Name</label>
+                    <input class="form-input" @bind="ViewModel.EditUserModel.FirstName" />
+                </div>
+                <div class="form-group">
+                    <label>Last Name</label>
+                    <input class="form-input" @bind="ViewModel.EditUserModel.LastName" />
+                </div>
+                <div class="form-group form-check">
+                    <input type="checkbox" @bind="ViewModel.EditUserModel.IsAdmin" id="editIsAdmin" />
+                    <label for="editIsAdmin">Admin</label>
+                </div>
+                <div class="form-group form-check">
+                    <input type="checkbox" @bind="ViewModel.EditUserModel.IsEditor" id="editIsEditor" />
+                    <label for="editIsEditor">Editor</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" @onclick="ViewModel.CloseEditModal">Cancel</button>
+                <button class="btn btn-edit" @onclick="HandleUpdateUser">Save</button>
+            </div>
+        </div>
+    </div>
+}
+
+@* Delete Confirm Modal *@
+@if (ViewModel.ShowDeleteConfirm && ViewModel.SelectedUser != null)
+{
+    <div class="modal-overlay" @onclick="ViewModel.CloseDeleteConfirm">
+        <div class="modal modal-sm" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h4>Confirm Deletion</h4>
+                <button class="btn-close" @onclick="ViewModel.CloseDeleteConfirm"><span class="icon">&#xE711;</span></button>
+            </div>
+            <div class="modal-body">
+                @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+                {
+                    <div class="alert alert-error">@ViewModel.ErrorMessage</div>
+                }
+                <p>Are you sure you want to delete user <strong>@ViewModel.SelectedUser.Username</strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" @onclick="ViewModel.CloseDeleteConfirm">Cancel</button>
+                <button class="btn btn-delete" @onclick="HandleDeleteUser">Delete</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private Components.ViewModels.UsersViewModel ViewModel { get; set; } = null!;
+
+    [SupplyParameterFromQuery(Name = "action")]
+    public string? Action { get; set; }
+
+    [SupplyParameterFromQuery(Name = "id")]
+    public long? SelectedId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        ViewModel = new Components.ViewModels.UsersViewModel(UsersMediator, AuthService);
+        await ViewModel.LoadUsers();
+
+        if (SelectedId.HasValue)
+        {
+            var user = ViewModel.Users.FirstOrDefault(u => u.Id == SelectedId.Value);
+            if (user != null)
+            {
+                ViewModel.SelectUser(user);
+                if (Action == "edit") ViewModel.OpenEditModal(user);
+                else if (Action == "delete") ViewModel.OpenDeleteConfirm(user);
+            }
+        }
+        else if (Action == "add")
+        {
+            ViewModel.OpenAddModal();
+        }
+    }
+
+    private async Task HandleAddUser()
+    {
+        var success = await ViewModel.AddUser();
+        if (success) UpdateUrl(null, null);
+    }
+
+    private async Task HandleUpdateUser()
+    {
+        var success = await ViewModel.UpdateUser();
+        if (success) UpdateUrl(null, null);
+    }
+
+    private async Task HandleDeleteUser()
+    {
+        var success = await ViewModel.DeleteUser();
+        if (success) UpdateUrl(null, null);
+    }
+
+    private void UpdateUrl(string? action, long? id)
+    {
+        var uri = "/users";
+        if (action != null && id != null)
+            uri = $"/users?action={action}&id={id}";
+        else if (action != null)
+            uri = $"/users?action={action}";
+        Navigation.NavigateTo(uri, forceLoad: false, replace: true);
+    }
+}

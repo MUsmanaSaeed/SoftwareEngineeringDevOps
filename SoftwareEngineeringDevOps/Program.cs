@@ -1,3 +1,4 @@
+using SoftwareEngineeringDevOps.App.Auth;
 using SoftwareEngineeringDevOps.App.BrickOrders;
 using SoftwareEngineeringDevOps.App.BrickOrders.Persistence;
 using SoftwareEngineeringDevOps.App.BrickOrdersReceived;
@@ -34,6 +35,9 @@ builder.Services.AddSingleton<IBrickOrdersMediator, BrickOrdersMediator>();
 
 builder.Services.AddSingleton<IBrickOrdersReceivedDB, BrickOrdersReceivedDB>();
 builder.Services.AddSingleton<IBrickOrdersReceivedMediator, BrickOrdersReceivedMediator>();
+
+// Authentication - scoped per circuit (server-side session)
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 var app = builder.Build();
 
