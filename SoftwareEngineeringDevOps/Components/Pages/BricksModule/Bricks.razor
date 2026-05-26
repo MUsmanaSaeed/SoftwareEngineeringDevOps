@@ -118,7 +118,7 @@
 @* Add Brick Modal *@
 @if (ViewModel.ShowAddModal)
 {
-    <div class="modal-overlay" @onclick="ViewModel.CloseAddModal">
+    <div class="modal-overlay">
         <div class="modal" @onclick:stopPropagation="true">
             <div class="modal-header">
                 <h4>Add Brick</h4>
@@ -196,7 +196,7 @@
 @* Edit Brick Modal *@
 @if (ViewModel.ShowEditModal && ViewModel.EditBrickModel != null)
 {
-    <div class="modal-overlay" @onclick="ViewModel.CloseEditModal">
+    <div class="modal-overlay">
         <div class="modal" @onclick:stopPropagation="true">
             <div class="modal-header">
                 <h4>Edit Brick</h4>
@@ -273,7 +273,7 @@
 @* Delete Confirm Modal *@
 @if (ViewModel.ShowDeleteConfirm && ViewModel.SelectedBrick != null)
 {
-    <div class="modal-overlay" @onclick="ViewModel.CloseDeleteConfirm">
+    <div class="modal-overlay">
         <div class="modal modal-sm" @onclick:stopPropagation="true">
             <div class="modal-header">
                 <h4>Confirm Deletion</h4>

@@ -8,8 +8,9 @@ create or replace function public.users_insert(
 	"IsAdmin" boolean,
 	"IsEditor" boolean
 )
-returns void
+returns setof users
 as $$
 	insert into users(username, password, firstname, lastname, isadmin, iseditor)
-	values ("Username", "Password", "FirstName", "LastName", "IsAdmin", "IsEditor");
+	values ("Username", "Password", "FirstName", "LastName", "IsAdmin", "IsEditor")
+	returning *;
 $$ language sql;

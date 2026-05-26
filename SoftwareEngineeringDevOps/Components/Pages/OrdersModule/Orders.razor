@@ -160,7 +160,7 @@
 @* Add Order Modal *@
 @if (ViewModel.ShowAddOrderModal)
 {
-    <div class="modal-overlay" @onclick="ViewModel.CloseAddOrderModal">
+    <div class="modal-overlay">
         <div class="modal" @onclick:stopPropagation="true">
             <div class="modal-header">
                 <h4>Add Order Line</h4>
@@ -211,7 +211,7 @@
 @* Edit Order Modal *@
 @if (ViewModel.ShowEditOrderModal && ViewModel.EditOrderModel != null)
 {
-    <div class="modal-overlay" @onclick="ViewModel.CloseEditOrderModal">
+    <div class="modal-overlay">
         <div class="modal" @onclick:stopPropagation="true">
             <div class="modal-header">
                 <h4>Edit Order Line</h4>
@@ -261,7 +261,7 @@
 @* Delete Order Confirm *@
 @if (ViewModel.ShowDeleteOrderConfirm && ViewModel.OrderToDelete != null)
 {
-    <div class="modal-overlay" @onclick="ViewModel.CloseDeleteOrderConfirm">
+    <div class="modal-overlay">
         <div class="modal modal-sm" @onclick:stopPropagation="true">
             <div class="modal-header">
                 <h4>Confirm Deletion</h4>
@@ -281,7 +281,7 @@
 @* Add Received Modal *@
 @if (ViewModel.ShowAddReceivedModal)
 {
-    <div class="modal-overlay" @onclick="ViewModel.CloseAddReceivedModal">
+    <div class="modal-overlay">
         <div class="modal" @onclick:stopPropagation="true">
             <div class="modal-header">
                 <h4>Add Received Batch</h4>
@@ -314,7 +314,7 @@
 @* Edit Received Modal *@
 @if (ViewModel.ShowEditReceivedModal && ViewModel.EditReceivedModel != null)
 {
-    <div class="modal-overlay" @onclick="ViewModel.CloseEditReceivedModal">
+    <div class="modal-overlay">
         <div class="modal" @onclick:stopPropagation="true">
             <div class="modal-header">
                 <h4>Edit Received Batch</h4>
@@ -347,7 +347,7 @@
 @* Delete Received Confirm *@
 @if (ViewModel.ShowDeleteReceivedConfirm && ViewModel.ReceivedToDelete != null)
 {
-    <div class="modal-overlay" @onclick="ViewModel.CloseDeleteReceivedConfirm">
+    <div class="modal-overlay">
         <div class="modal modal-sm" @onclick:stopPropagation="true">
             <div class="modal-header">
                 <h4>Confirm Deletion</h4>
