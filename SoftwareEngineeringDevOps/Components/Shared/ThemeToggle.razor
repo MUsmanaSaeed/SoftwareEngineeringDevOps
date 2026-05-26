@@ -1,0 +1,50 @@
+@inject IJSRuntime JS
+
+<div class="theme-toggle-fab">
+    <button class="fab-button" @onclick="ToggleMenu">
+        <span class="icon">&#xE771;</span>
+    </button>
+    @if (ShowMenu)
+    {
+        <div class="theme-menu">
+            <button class="theme-option @(CurrentTheme == "light" ? "active" : "")" @onclick='() => SetTheme("light")'>
+                <span class="icon">&#xE706;</span>
+                <span>Light</span>
+            </button>
+            <button class="theme-option @(CurrentTheme == "dark" ? "active" : "")" @onclick='() => SetTheme("dark")'>
+                <span class="icon">&#xE708;</span>
+                <span>Dark</span>
+            </button>
+            <button class="theme-option @(CurrentTheme == "system" ? "active" : "")" @onclick='() => SetTheme("system")'>
+                <span class="icon">&#xE770;</span>
+                <span>System</span>
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    private bool ShowMenu { get; set; }
+    private string CurrentTheme { get; set; } = "system";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            CurrentTheme = await JS.InvokeAsync<string>("themeManager.getTheme") ?? "system";
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleMenu()
+    {
+        ShowMenu = !ShowMenu;
+    }
+
+    private async Task SetTheme(string theme)
+    {
+        CurrentTheme = theme;
+        await JS.InvokeVoidAsync("themeManager.setTheme", theme);
+        ShowMenu = false;
+    }
+}

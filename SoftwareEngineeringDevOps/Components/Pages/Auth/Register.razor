@@ -1,0 +1,87 @@
+@page "/register"
+@layout Layout.AuthLayout
+@inject SoftwareEngineeringDevOps.App.Auth.IAuthService AuthService
+@inject SoftwareEngineeringDevOps.App.Users.IUsersMediator UsersMediator
+@inject NavigationManager Navigation
+
+<PageTitle>Register</PageTitle>
+
+<div class="auth-form">
+    <h2>Create Account</h2>
+
+    @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+    {
+        <div class="alert alert-error">@ViewModel.ErrorMessage</div>
+    }
+
+    @if (ViewModel.ValidationErrors.Count > 0)
+    {
+        <div class="alert alert-error">
+            <ul>
+                @foreach (var error in ViewModel.ValidationErrors)
+                {
+                    <li>@error</li>
+                }
+            </ul>
+        </div>
+    }
+
+    <div class="form-group">
+        <label for="firstname">First Name</label>
+        <input id="firstname" type="text" class="form-input" @bind="ViewModel.FirstName" @bind:event="oninput" />
+    </div>
+
+    <div class="form-group">
+        <label for="lastname">Last Name</label>
+        <input id="lastname" type="text" class="form-input" @bind="ViewModel.LastName" @bind:event="oninput" />
+    </div>
+
+    <div class="form-group">
+        <label for="username">Username</label>
+        <input id="username" type="text" class="form-input" @bind="ViewModel.Username" @bind:event="oninput" />
+    </div>
+
+    <div class="form-group">
+        <label for="password">Password</label>
+        <input id="password" type="password" class="form-input" @bind="ViewModel.Password" @bind:event="oninput" />
+    </div>
+
+    <button class="btn btn-primary btn-full" @onclick="HandleRegister" disabled="@ViewModel.IsLoading">
+        @if (ViewModel.IsLoading)
+        {
+            <span class="loading-spinner-sm"></span>
+        }
+        else
+        {
+            <span>Create Account</span>
+        }
+    </button>
+
+    <div class="auth-switch">
+        <span>Already have an account?</span>
+        <a href="/login">Sign In</a>
+    </div>
+</div>
+
+@code {
+    private Components.ViewModels.RegisterViewModel ViewModel { get; set; } = null!;
+
+    protected override void OnInitialized()
+    {
+        ViewModel = new Components.ViewModels.RegisterViewModel(UsersMediator, AuthService);
+
+        if (AuthService.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/", forceLoad: false);
+        }
+    }
+
+    private async Task HandleRegister()
+    {
+        var success = await ViewModel.ExecuteRegister();
+        if (success)
+        {
+            Navigation.NavigateTo("/", forceLoad: false);
+        }
+    }
+}

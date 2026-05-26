@@ -10,7 +10,7 @@
 
         IUser User { get; }
 
-        public long Id { get; }
+        public long Id { get => User.Id; }
         public string Username { get; set; }
         public string Password { get; set; }
         public string FirstName { get; set; }
