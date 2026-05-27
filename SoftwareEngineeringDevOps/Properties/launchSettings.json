@@ -1,33 +1,44 @@
 {
-  "$schema": "https://json.schemastore.org/launchsettings.json",
-    "profiles": {
-      "http": {
-        "commandName": "Project",
-        "dotnetRunMessages": true,
-        "launchBrowser": true,
-        "applicationUrl": "http://localhost:5181",
-        "environmentVariables": {
-          "ASPNETCORE_ENVIRONMENT": "Development",
-          "DB_HOST": "ep-autumn-cell-abv9no1b-pooler.eu-west-2.aws.neon.tech",
-          "DB_PORT": "5432",
-          "DB_NAME": "neondb",
-          "DB_USERID": "neondb_owner",
-          "DB_PASSWORD": "npg_ZGLEviVrY1B8"
-        }
+  "profiles": {
+    "http": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DB_HOST": "ep-autumn-cell-abv9no1b-pooler.eu-west-2.aws.neon.tech",
+        "DB_PORT": "5432",
+        "DB_NAME": "neondb",
+        "DB_USERID": "neondb_owner",
+        "DB_PASSWORD": "npg_ZGLEviVrY1B8"
       },
-      "https": {
-        "commandName": "Project",
-        "dotnetRunMessages": true,
-        "launchBrowser": true,
-        "applicationUrl": "https://localhost:7144;http://localhost:5181",
-        "environmentVariables": {
-          "ASPNETCORE_ENVIRONMENT": "Development",
-          "DB_HOST": "ep-autumn-cell-abv9no1b-pooler.eu-west-2.aws.neon.tech",
-          "DB_PORT": "5432",
-          "DB_NAME": "neondb",
-          "DB_USERID": "neondb_owner",
-          "DB_PASSWORD": "npg_ZGLEviVrY1B8"
-        }
-      }
+      "dotnetRunMessages": true,
+      "applicationUrl": "http://localhost:5181"
+    },
+    "https": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DB_HOST": "ep-autumn-cell-abv9no1b-pooler.eu-west-2.aws.neon.tech",
+        "DB_PORT": "5432",
+        "DB_NAME": "neondb",
+        "DB_USERID": "neondb_owner",
+        "DB_PASSWORD": "npg_ZGLEviVrY1B8"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "https://localhost:7144;http://localhost:5181"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker",
+      "launchBrowser": true,
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
+      "environmentVariables": {
+        "ASPNETCORE_HTTPS_PORTS": "8081",
+        "ASPNETCORE_HTTP_PORTS": "8080"
+      },
+      "publishAllPorts": true,
+      "useSSL": true
     }
-  }
+  },
+  "$schema": "https://json.schemastore.org/launchsettings.json"
+}
