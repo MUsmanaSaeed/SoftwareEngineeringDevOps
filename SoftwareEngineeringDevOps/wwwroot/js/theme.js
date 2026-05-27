@@ -49,16 +49,12 @@
 
     applySavedTheme();
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', applySavedTheme, { once: true });
-    }
-
     window.addEventListener('pageshow', applySavedTheme);
 
     if (typeof colorSchemeQuery.addEventListener === 'function') {
         colorSchemeQuery.addEventListener('change', function () {
             if (getStoredTheme() === 'system') {
-                applyTheme(defaultTheme);
+                applySavedTheme();
             }
         });
     }
