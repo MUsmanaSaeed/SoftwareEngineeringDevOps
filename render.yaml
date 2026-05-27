@@ -1,9 +1,12 @@
 services:
   - type: web
-    name: brick-management-app
+    name: acs-brick-management
     env: docker
     plan: starter
+    branch: master
     dockerfilePath: SoftwareEngineeringDevOps/Dockerfile
+    prPreviews:
+      enabled: true
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
