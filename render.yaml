@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: brick-management-app
+    env: docker
+    plan: starter
+    dockerfilePath: SoftwareEngineeringDevOps/Dockerfile
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://+:10000
