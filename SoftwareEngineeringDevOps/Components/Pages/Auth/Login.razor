@@ -1,0 +1,79 @@
+@page "/login"
+@layout Layout.AuthLayout
+@inject SoftwareEngineeringDevOps.App.Auth.IAuthService AuthService
+@inject SoftwareEngineeringDevOps.App.Users.IUsersMediator UsersMediator
+@inject NavigationManager Navigation
+
+<PageTitle>Login</PageTitle>
+
+<div class="auth-form">
+    <h2>Sign In</h2>
+
+    @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+    {
+        <div class="alert alert-error">@ViewModel.ErrorMessage</div>
+    }
+
+    <div class="form-group">
+        <label for="username">Username</label>
+        <input id="username" type="text" class="form-input" @bind="ViewModel.Username" @bind:event="oninput" />
+    </div>
+
+    <div class="form-group">
+        <label for="password">Password</label>
+        <input id="password" type="password" class="form-input" @bind="ViewModel.Password" @bind:event="oninput" />
+    </div>
+
+    <button class="btn btn-primary btn-full" @onclick="HandleLogin" disabled="@ViewModel.IsLoading">
+        @if (ViewModel.IsLoading)
+        {
+            <span class="loading-spinner-sm"></span>
+        }
+        else
+        {
+            <span>Sign In</span>
+        }
+    </button>
+
+    <div class="auth-switch">
+        <span>Don't have an account?</span>
+        <a href="/register">Create Account</a>
+    </div>
+</div>
+
+@code {
+    private Components.ViewModels.LoginViewModel ViewModel { get; set; } = null!;
+
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    protected override void OnInitialized()
+    {
+        ViewModel = new Components.ViewModels.LoginViewModel(AuthService);
+        ViewModel.ReturnUrl = ReturnUrl;
+
+        if (AuthService.IsAuthenticated)
+        {
+            var target = "/";
+            if (!string.IsNullOrWhiteSpace(ReturnUrl) && ReturnUrl.StartsWith("/") && !ReturnUrl.StartsWith("//"))
+            {
+                target = ReturnUrl;
+            }
+            Navigation.NavigateTo(target, forceLoad: false);
+        }
+    }
+
+    private async Task HandleLogin()
+    {
+        var success = await ViewModel.ExecuteLogin();
+        if (success)
+        {
+            var target = "/";
+            if (!string.IsNullOrWhiteSpace(ReturnUrl) && ReturnUrl.StartsWith("/") && !ReturnUrl.StartsWith("//"))
+            {
+                target = ReturnUrl;
+            }
+            Navigation.NavigateTo(target, forceLoad: false);
+        }
+    }
+}

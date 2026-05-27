@@ -1,0 +1,350 @@
+@page "/bricks"
+@inject SoftwareEngineeringDevOps.App.Auth.IAuthService AuthService
+@inject SoftwareEngineeringDevOps.App.Bricks.IBricksMediator BricksMediator
+@inject SoftwareEngineeringDevOps.App.Manufacturers.IManufacturersMediator ManufacturersMediator
+@inject SoftwareEngineeringDevOps.App.BrickOrders.IBrickOrdersMediator OrdersMediator
+@inject NavigationManager Navigation
+
+<PageTitle>Bricks</PageTitle>
+
+<div class="split-layout">
+    <div class="split-left">
+        <div class="panel-header">
+            <h3>Bricks</h3>
+            @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanCreate(ViewModel.CurrentUserRole))
+            {
+                <button class="btn btn-add" @onclick="ViewModel.OpenAddModal">
+                    <span class="icon">&#xE710;</span>
+                </button>
+            }
+        </div>
+        <div class="data-table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Manufacturer</th>
+                        <th>Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var brick in ViewModel.Bricks)
+                    {
+                        <tr class="@(ViewModel.SelectedBrick?.Id == brick.Id ? "selected" : "")"
+                            @onclick="() => HandleSelect(brick)">
+                            <td>@brick.Name</td>
+                            <td>@brick.Manufacturer.Name</td>
+                            <td>@ViewModel.FormatPrice(brick.Price)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="split-right">
+        @if (ViewModel.SelectedBrick != null)
+        {
+            <div class="detail-panel">
+                <div class="detail-header">
+                    <h3>@ViewModel.SelectedBrick.Name</h3>
+                    <div class="detail-actions">
+                        @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanEdit(ViewModel.CurrentUserRole))
+                        {
+                            <button class="btn btn-edit" @onclick="() => ViewModel.OpenEditModal(ViewModel.SelectedBrick)">
+                                <span class="icon">&#xE70F;</span>
+                            </button>
+                        }
+                        @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanDelete(ViewModel.CurrentUserRole))
+                        {
+                            <button class="btn btn-delete" @onclick="() => HandleOpenDelete(ViewModel.SelectedBrick)">
+                                <span class="icon">&#xE74D;</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+                <div class="detail-body">
+                    <div class="detail-row"><span class="label">Price:</span><span>@ViewModel.FormatPrice(ViewModel.SelectedBrick.Price)</span></div>
+                    <div class="detail-row"><span class="label">Colour:</span><span>@ViewModel.SelectedBrick.Colour</span></div>
+                    <div class="detail-row"><span class="label">Material:</span><span>@ViewModel.SelectedBrick.Material</span></div>
+                    <div class="detail-row"><span class="label">Strength:</span><span>@ViewModel.SelectedBrick.Strength N/mm²</span></div>
+                    <div class="detail-row"><span class="label">Dimensions:</span><span>@ViewModel.SelectedBrick.Width × @ViewModel.SelectedBrick.Height × @ViewModel.SelectedBrick.Depth mm</span></div>
+                    <div class="detail-row"><span class="label">Type:</span><span>@ViewModel.SelectedBrick.Type</span></div>
+                    <div class="detail-row"><span class="label">Voids:</span><span>@ViewModel.SelectedBrick.Voids%</span></div>
+                    <div class="detail-row">
+                        <span class="label">Manufacturer:</span>
+                        <a href="/manufacturers?id=@ViewModel.SelectedBrick.Manufacturer.Id">@ViewModel.SelectedBrick.Manufacturer.Name</a>
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <h4>Orders</h4>
+                    @if (ViewModel.SelectedBrickOrders.Any())
+                    {
+                        <table class="data-table data-table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Order No</th>
+                                    <th>Qty</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var order in ViewModel.SelectedBrickOrders)
+                                {
+                                    <tr>
+                                        <td><a href="/brick-orders?orderNo=@order.OrderNo">@order.OrderNo</a></td>
+                                        <td>@order.BricksOrdered</td>
+                                        <td>@order.OrderedDate.ToString("dd/MM/yyyy")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <p class="text-muted">No orders for this brick.</p>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="empty-detail">
+                <p>Select a brick to view details</p>
+            </div>
+        }
+    </div>
+</div>
+
+@* Add Brick Modal *@
+@if (ViewModel.ShowAddModal)
+{
+    <div class="modal-overlay">
+        <div class="modal" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h4>Add Brick</h4>
+                <button class="btn-close" @onclick="ViewModel.CloseAddModal"><span class="icon">&#xE711;</span></button>
+            </div>
+            <div class="modal-body">
+                @if (ViewModel.ValidationErrors.Count > 0)
+                {
+                    <div class="alert alert-error">
+                        <ul>@foreach (var e in ViewModel.ValidationErrors) { <li>@e</li> }</ul>
+                    </div>
+                }
+                <div class="form-group">
+                    <label>Name</label>
+                    <input class="form-input" @bind="ViewModel.NewBrickModel.Name" />
+                </div>
+                <div class="form-group">
+                    <label>Manufacturer</label>
+                    <input class="form-input" placeholder="Search manufacturers..." @bind="ViewModel.ManufacturerSearch" @bind:event="oninput" />
+                    <select class="form-input" @bind="ViewModel.NewBrickModel.ManufacturerId">
+                        <option value="0">-- Select --</option>
+                        @foreach (var m in ViewModel.FilteredManufacturers)
+                        {
+                            <option value="@m.Id">@m.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Price (£)</label>
+                    <input class="form-input" type="number" step="0.01" @bind="ViewModel.NewBrickModel.Price" />
+                </div>
+                <div class="form-group">
+                    <label>Colour</label>
+                    <input class="form-input" @bind="ViewModel.NewBrickModel.Colour" />
+                </div>
+                <div class="form-group">
+                    <label>Material</label>
+                    <input class="form-input" @bind="ViewModel.NewBrickModel.Material" />
+                </div>
+                <div class="form-group">
+                    <label>Strength (N/mm²)</label>
+                    <input class="form-input" type="number" step="0.1" @bind="ViewModel.NewBrickModel.Strength" />
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Width (mm)</label>
+                        <input class="form-input" type="number" step="0.1" @bind="ViewModel.NewBrickModel.Width" />
+                    </div>
+                    <div class="form-group">
+                        <label>Height (mm)</label>
+                        <input class="form-input" type="number" step="0.1" @bind="ViewModel.NewBrickModel.Height" />
+                    </div>
+                    <div class="form-group">
+                        <label>Depth (mm)</label>
+                        <input class="form-input" type="number" step="0.1" @bind="ViewModel.NewBrickModel.Depth" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Type</label>
+                    <input class="form-input" @bind="ViewModel.NewBrickModel.Type" />
+                </div>
+                <div class="form-group">
+                    <label>Voids (%)</label>
+                    <input class="form-input" type="number" step="0.1" @bind="ViewModel.NewBrickModel.Voids" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" @onclick="ViewModel.CloseAddModal">Cancel</button>
+                <button class="btn btn-add" @onclick="HandleAdd">Save</button>
+            </div>
+        </div>
+    </div>
+}
+
+@* Edit Brick Modal *@
+@if (ViewModel.ShowEditModal && ViewModel.EditBrickModel != null)
+{
+    <div class="modal-overlay">
+        <div class="modal" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h4>Edit Brick</h4>
+                <button class="btn-close" @onclick="ViewModel.CloseEditModal"><span class="icon">&#xE711;</span></button>
+            </div>
+            <div class="modal-body">
+                @if (ViewModel.ValidationErrors.Count > 0)
+                {
+                    <div class="alert alert-error">
+                        <ul>@foreach (var e in ViewModel.ValidationErrors) { <li>@e</li> }</ul>
+                    </div>
+                }
+                <div class="form-group">
+                    <label>Name</label>
+                    <input class="form-input" @bind="ViewModel.EditBrickModel.Name" />
+                </div>
+                <div class="form-group">
+                    <label>Manufacturer</label>
+                    <input class="form-input" placeholder="Search manufacturers..." @bind="ViewModel.ManufacturerSearch" @bind:event="oninput" />
+                    <select class="form-input" @bind="ViewModel.EditBrickModel.ManufacturerId">
+                        @foreach (var m in ViewModel.FilteredManufacturers)
+                        {
+                            <option value="@m.Id">@m.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Price (£)</label>
+                    <input class="form-input" type="number" step="0.01" @bind="ViewModel.EditBrickModel.Price" />
+                </div>
+                <div class="form-group">
+                    <label>Colour</label>
+                    <input class="form-input" @bind="ViewModel.EditBrickModel.Colour" />
+                </div>
+                <div class="form-group">
+                    <label>Material</label>
+                    <input class="form-input" @bind="ViewModel.EditBrickModel.Material" />
+                </div>
+                <div class="form-group">
+                    <label>Strength (N/mm²)</label>
+                    <input class="form-input" type="number" step="0.1" @bind="ViewModel.EditBrickModel.Strength" />
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Width (mm)</label>
+                        <input class="form-input" type="number" step="0.1" @bind="ViewModel.EditBrickModel.Width" />
+                    </div>
+                    <div class="form-group">
+                        <label>Height (mm)</label>
+                        <input class="form-input" type="number" step="0.1" @bind="ViewModel.EditBrickModel.Height" />
+                    </div>
+                    <div class="form-group">
+                        <label>Depth (mm)</label>
+                        <input class="form-input" type="number" step="0.1" @bind="ViewModel.EditBrickModel.Depth" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Type</label>
+                    <input class="form-input" @bind="ViewModel.EditBrickModel.Type" />
+                </div>
+                <div class="form-group">
+                    <label>Voids (%)</label>
+                    <input class="form-input" type="number" step="0.1" @bind="ViewModel.EditBrickModel.Voids" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" @onclick="ViewModel.CloseEditModal">Cancel</button>
+                <button class="btn btn-edit" @onclick="HandleUpdate">Save</button>
+            </div>
+        </div>
+    </div>
+}
+
+@* Delete Confirm Modal *@
+@if (ViewModel.ShowDeleteConfirm && ViewModel.SelectedBrick != null)
+{
+    <div class="modal-overlay">
+        <div class="modal modal-sm" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h4>Confirm Deletion</h4>
+                <button class="btn-close" @onclick="ViewModel.CloseDeleteConfirm"><span class="icon">&#xE711;</span></button>
+            </div>
+            <div class="modal-body">
+                @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
+                {
+                    <div class="alert alert-error">@ViewModel.ErrorMessage</div>
+                }
+                <p>Are you sure you want to delete <strong>@ViewModel.SelectedBrick.Name</strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-cancel" @onclick="ViewModel.CloseDeleteConfirm">Cancel</button>
+                <button class="btn btn-delete" @onclick="HandleDelete" disabled="@(!string.IsNullOrEmpty(ViewModel.ErrorMessage))">Delete</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private Components.ViewModels.BricksViewModel ViewModel { get; set; } = null!;
+
+    [SupplyParameterFromQuery(Name = "action")]
+    public string? Action { get; set; }
+
+    [SupplyParameterFromQuery(Name = "id")]
+    public long? SelectedId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        ViewModel = new Components.ViewModels.BricksViewModel(BricksMediator, ManufacturersMediator, OrdersMediator, AuthService);
+        await ViewModel.LoadBricks();
+
+        if (SelectedId.HasValue)
+        {
+            await ViewModel.SelectBrickById(SelectedId.Value);
+            if (Action == "edit" && ViewModel.SelectedBrick != null) ViewModel.OpenEditModal(ViewModel.SelectedBrick);
+            else if (Action == "delete" && ViewModel.SelectedBrick != null) await ViewModel.OpenDeleteConfirm(ViewModel.SelectedBrick);
+        }
+        else if (Action == "add")
+        {
+            ViewModel.OpenAddModal();
+        }
+    }
+
+    private async Task HandleSelect(global::SoftwareEngineeringDevOps.App.Bricks.IBrick brick)
+    {
+        await ViewModel.SelectBrick(brick);
+    }
+
+    private async Task HandleOpenDelete(global::SoftwareEngineeringDevOps.App.Bricks.IBrick brick)
+    {
+        await ViewModel.OpenDeleteConfirm(brick);
+    }
+
+    private async Task HandleAdd()
+    {
+        var success = await ViewModel.AddBrick();
+        if (success) Navigation.NavigateTo("/bricks", forceLoad: false, replace: true);
+    }
+
+    private async Task HandleUpdate()
+    {
+        var success = await ViewModel.UpdateBrick();
+        if (success) Navigation.NavigateTo("/bricks", forceLoad: false, replace: true);
+    }
+
+    private async Task HandleDelete()
+    {
+        var success = await ViewModel.DeleteBrick();
+        if (success) Navigation.NavigateTo("/bricks", forceLoad: false, replace: true);
+    }
+}

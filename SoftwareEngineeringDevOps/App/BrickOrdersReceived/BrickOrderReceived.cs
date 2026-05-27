@@ -1,0 +1,26 @@
+using SoftwareEngineeringDevOps.App.BrickOrdersReceived.Persistence.DBOs;
+using SoftwareEngineeringDevOps.App.Users;
+
+namespace SoftwareEngineeringDevOps.App.BrickOrdersReceived
+{
+    public class BrickOrderReceived : IBrickOrderReceived
+    {
+        public static BrickOrderReceived FromDBO(BrickOrderReceivedDBO dbo, IUserInfo receivedBy)
+        {
+            return new BrickOrderReceived
+            {
+                Id = dbo.Id,
+                BrickOrderId = dbo.BrickOrderId,
+                BricksReceived = dbo.BricksReceived,
+                ReceivedDate = dbo.ReceivedDate.ToUkTime(),
+                ReceivedBy = receivedBy,
+            };
+        }
+
+        public long Id { get; private set; }
+        public long BrickOrderId { get; private set; }
+        public int BricksReceived { get; private set; }
+        public DateTime ReceivedDate { get; private set; }
+        public IUserInfo ReceivedBy { get; private set; }
+    }
+}

@@ -1,10 +1,43 @@
+using SoftwareEngineeringDevOps.App.Auth;
+using SoftwareEngineeringDevOps.App.BrickOrders;
+using SoftwareEngineeringDevOps.App.BrickOrders.Persistence;
+using SoftwareEngineeringDevOps.App.BrickOrdersReceived;
+using SoftwareEngineeringDevOps.App.BrickOrdersReceived.Persistence;
+using SoftwareEngineeringDevOps.App.Bricks;
+using SoftwareEngineeringDevOps.App.Bricks.Persistence;
+using SoftwareEngineeringDevOps.App.Manufacturers;
+using SoftwareEngineeringDevOps.App.Manufacturers.Persistence;
+using SoftwareEngineeringDevOps.App.Users;
+using SoftwareEngineeringDevOps.App.Users.Persistence;
 using SoftwareEngineeringDevOps.Components;
+
+
+AppContext.SetSwitch("Npgsql.EnableStoredProcedureCompatMode", true);
+Migrator.Migrator.Migrate();
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddSingleton<IUsersDB, UsersDB>();
+builder.Services.AddSingleton<IUsersMediator, UsersMediator>();
+
+builder.Services.AddSingleton<IManufacturersDB, ManufacturersDB>();
+builder.Services.AddSingleton<IManufacturersMediator, ManufacturersMediator>();
+
+builder.Services.AddSingleton<IBricksDB, BricksDB>();
+builder.Services.AddSingleton<IBricksMediator, BricksMediator>();
+
+builder.Services.AddSingleton<IBrickOrdersDB, BrickOrdersDB>();
+builder.Services.AddSingleton<IBrickOrdersMediator, BrickOrdersMediator>();
+
+builder.Services.AddSingleton<IBrickOrdersReceivedDB, BrickOrdersReceivedDB>();
+builder.Services.AddSingleton<IBrickOrdersReceivedMediator, BrickOrdersReceivedMediator>();
+
+// Authentication - scoped per circuit (server-side session)
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 var app = builder.Build();
 
