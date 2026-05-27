@@ -126,6 +126,15 @@ a:hover {
     height: auto;
 }
 
+:root .auth-logo-img,
+html[data-theme="light"] .auth-logo-img {
+    filter: brightness(0);
+}
+
+html[data-theme="dark"] .auth-logo-img {
+    filter: none;
+}
+
 .auth-form {
     background: var(--bg-primary);
     border-radius: 12px;
@@ -149,6 +158,14 @@ a:hover {
 .auth-switch a {
     margin-left: 0.25rem;
     font-weight: 600;
+}
+
+.auth-form h2,
+.auth-form .form-group label,
+.auth-form .auth-switch span,
+.auth-form .btn {
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 /* ============================================
@@ -1085,4 +1102,9 @@ html[data-theme="light"] .logo-light {
         width: 95%;
         max-height: 90vh;
     }
+}
+
+.user-select-none {
+    user-select: none;
+    -webkit-user-select: none;
 }

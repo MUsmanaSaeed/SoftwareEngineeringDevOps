@@ -1,11 +1,11 @@
-DROP FUNCTION IF EXISTS public.brickorders_insert(text, bigint, int, timestamp, timestamp, bigint);
+DROP FUNCTION IF EXISTS public.brickorders_insert(text, bigint, int, timestamptz, timestamptz, bigint);
 
 create or replace function public.brickorders_insert(
 	"OrderNo" text,
 	"BrickId" bigint,
 	"BricksOrdered" int,
-	"OrderedDate" timestamp,
-	"ExpectedDate" timestamp,
+	"OrderedDate" timestamptz,
+	"ExpectedDate" timestamptz,
 	"CreatedById" bigint
 )
 returns setof brickorders
