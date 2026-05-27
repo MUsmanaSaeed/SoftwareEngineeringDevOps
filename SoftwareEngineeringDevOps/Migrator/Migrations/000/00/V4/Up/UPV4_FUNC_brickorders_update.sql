@@ -1,11 +1,11 @@
-DROP FUNCTION IF EXISTS public.brickorders_update(bigint, bigint, int, timestamp, timestamp);
+DROP FUNCTION IF EXISTS public.brickorders_update(bigint, bigint, int, timestamptz, timestamptz);
 
 create or replace function public.brickorders_update(
 	"Id" bigint,
 	"BrickId" bigint,
 	"BricksOrdered" int,
-	"OrderedDate" timestamp,
-	"ExpectedDate" timestamp
+	"OrderedDate" timestamptz,
+	"ExpectedDate" timestamptz
 )
 returns setof brickorders
 as $$

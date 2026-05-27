@@ -1,9 +1,9 @@
-DROP FUNCTION IF EXISTS public.brickordersreceived_insert(bigint, int, timestamp, bigint);
+DROP FUNCTION IF EXISTS public.brickordersreceived_insert(bigint, int, timestamptz, bigint);
 
 create or replace function public.brickordersreceived_insert(
 	"BrickOrderId" bigint,
 	"BricksReceived" int,
-	"ReceivedDate" timestamp,
+	"ReceivedDate" timestamptz,
 	"ReceivedById" bigint
 )
 returns setof brickordersreceived

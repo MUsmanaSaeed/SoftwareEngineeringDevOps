@@ -1,6 +1,6 @@
 create or replace function public.brickorders_cancel(
 	"Id" bigint,
-	"CancelledDate" timestamp
+	"CancelledDate" timestamptz
 )
 returns setof brickorders
 as $$

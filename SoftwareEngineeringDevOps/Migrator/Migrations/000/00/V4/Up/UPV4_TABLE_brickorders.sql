@@ -3,8 +3,8 @@ CREATE TABLE brickorders(
   orderno text not null,
   brickid bigint not null references bricks(id),
   bricksordered int not null default 0,
-  ordereddate timestamp not null,
-  expecteddate timestamp not null,
-  cancelleddate timestamp null default null,
+  ordereddate timestamptz not null,
+  expecteddate timestamptz not null,
+  cancelleddate timestamptz null default null,
   createdbyid bigint not null references users(id)
 );
