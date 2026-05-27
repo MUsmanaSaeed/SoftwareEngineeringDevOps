@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
+    <File Path="render.yaml" />
   </Folder>
   <Project Path="SoftwareEngineeringDevOps/SoftwareEngineeringDevOps.csproj" />
 </Solution>
