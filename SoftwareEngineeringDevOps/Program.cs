@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using SoftwareEngineeringDevOps.App.Auth;
 using SoftwareEngineeringDevOps.App.BrickOrders;
 using SoftwareEngineeringDevOps.App.BrickOrders.Persistence;
@@ -20,6 +22,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddAuthorizationCore();
 
 builder.Services.AddSingleton<IUsersDB, UsersDB>();
 builder.Services.AddSingleton<IUsersMediator, UsersMediator>();
@@ -36,8 +40,10 @@ builder.Services.AddSingleton<IBrickOrdersMediator, BrickOrdersMediator>();
 builder.Services.AddSingleton<IBrickOrdersReceivedDB, BrickOrdersReceivedDB>();
 builder.Services.AddSingleton<IBrickOrdersReceivedMediator, BrickOrdersReceivedMediator>();
 
-// Authentication - scoped per circuit (server-side session)
-builder.Services.AddScoped<IAuthService, AuthService>();
+// Authentication - scoped per circuit and persisted in protected browser storage
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<IAuthService>(sp => sp.GetRequiredService<AuthService>());
+builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<AuthService>());
 
 var app = builder.Build();
 

@@ -66,9 +66,11 @@
 @code {
     private Components.ViewModels.RegisterViewModel ViewModel { get; set; } = null!;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         ViewModel = new Components.ViewModels.RegisterViewModel(UsersMediator, AuthService);
+
+        await AuthService.GetCurrentUserAsync();
 
         if (AuthService.IsAuthenticated)
         {

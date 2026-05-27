@@ -7,3 +7,10 @@
 <h1>Welcome</h1>
 <p>Welcome to the ACS Brick Management System, @AuthService.CurrentUser?.FirstName.</p>
 
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthService.GetCurrentUserAsync();
+    }
+}
+

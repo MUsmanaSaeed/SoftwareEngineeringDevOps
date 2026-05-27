@@ -68,9 +68,14 @@
 @code {
     private bool IsLoading { get; set; }
 
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthService.GetCurrentUserAsync();
+    }
+
     private async Task HandleLogout()
     {
-        await AuthService.Logout();
+        await AuthService.LogoutAsync();
         Navigation.NavigateTo("/login", forceLoad: true);
     }
 }

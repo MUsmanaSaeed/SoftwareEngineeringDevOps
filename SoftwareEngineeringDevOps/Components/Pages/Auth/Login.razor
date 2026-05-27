@@ -49,10 +49,12 @@
     [SupplyParameterFromQuery]
     public string? ReturnUrl { get; set; }
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         ViewModel = new Components.ViewModels.LoginViewModel(AuthService);
         ViewModel.ReturnUrl = ReturnUrl;
+
+        await AuthService.GetCurrentUserAsync();
 
         if (AuthService.IsAuthenticated)
         {

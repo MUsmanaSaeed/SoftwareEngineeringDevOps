@@ -4,9 +4,9 @@ namespace SoftwareEngineeringDevOps.App.Auth
 {
     public interface IAuthService
     {
-        Task<IUser?> GetCurrentUser();
-        Task<bool> Login(string username, string password);
-        Task Logout();
+        Task<IUserInfo?> GetCurrentUserAsync();
+        Task<bool> LoginAsync(string username, string password);
+        Task LogoutAsync();
         bool IsAuthenticated { get; }
         IUserInfo? CurrentUser { get; }
     }

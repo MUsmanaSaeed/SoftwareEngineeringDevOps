@@ -56,7 +56,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             }
 
             await _usersMediator.Insert(newUser);
-            await _authService.Login(Username, Password);
+            await _authService.LoginAsync(Username, Password);
             IsLoading = false;
             return true;
         }
