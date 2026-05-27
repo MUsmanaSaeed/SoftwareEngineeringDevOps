@@ -3,6 +3,7 @@ services:
     name: acs-brick-management
     env: docker
     plan: starter
+    region: frankfurt
     dockerfilePath: SoftwareEngineeringDevOps/Dockerfile
     previews:
       generation: automatic
