@@ -38,10 +38,18 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public string? ErrorMessage { get; set; }
         public List<string> DeletionBlockedBricks { get; set; } = new();
         public List<string> ChildBrickNames { get; set; } = new();
+        public string ManufacturersSearchTerm { get; set; } = string.Empty;
 
         public UserRole CurrentUserRole => _authService.CurrentUser != null
             ? RoleHelper.GetRole(_authService.CurrentUser)
             : UserRole.Standard;
+
+        public IEnumerable<IManufacturer> FilteredManufacturers =>
+            Manufacturers.Where(manufacturer =>
+                string.IsNullOrWhiteSpace(ManufacturersSearchTerm)
+                || manufacturer.Name.Contains(ManufacturersSearchTerm, StringComparison.OrdinalIgnoreCase)
+                || manufacturer.Email.Contains(ManufacturersSearchTerm, StringComparison.OrdinalIgnoreCase)
+                || manufacturer.PhoneNo.Contains(ManufacturersSearchTerm, StringComparison.OrdinalIgnoreCase));
 
         public async Task LoadManufacturers()
         {

@@ -51,10 +51,19 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
 
         public List<string> ValidationErrors { get; set; } = new();
         public string? ErrorMessage { get; set; }
+        public string OrderGroupsSearchTerm { get; set; } = string.Empty;
+        public string ReceivedSearchTerm { get; set; } = string.Empty;
 
         public UserRole CurrentUserRole => _authService.CurrentUser != null
             ? RoleHelper.GetRole(_authService.CurrentUser)
             : UserRole.Standard;
+
+        public IEnumerable<IGrouping<string, IBrickOrder>> FilteredOrderGroups =>
+            OrderGroups.Where(group =>
+                string.IsNullOrWhiteSpace(OrderGroupsSearchTerm)
+                || group.Key.Contains(OrderGroupsSearchTerm, StringComparison.OrdinalIgnoreCase)
+                || group.Count().ToString().Contains(OrderGroupsSearchTerm, StringComparison.OrdinalIgnoreCase)
+                || group.First().OrderedDate.ToString("dd/MM/yyyy").Contains(OrderGroupsSearchTerm, StringComparison.OrdinalIgnoreCase));
 
         public long CurrentUserId => _authService.CurrentUser?.Id ?? 0;
 
@@ -105,6 +114,13 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             if (!ReceivedByOrderLine.TryGetValue(orderLine.Id, out var received)) return 0;
             return received.Sum(r => r.BricksReceived);
         }
+
+        public IEnumerable<IBrickOrderReceived> FilterReceivedItems(IEnumerable<IBrickOrderReceived> receivedItems) =>
+            receivedItems.Where(rcv =>
+                string.IsNullOrWhiteSpace(ReceivedSearchTerm)
+                || rcv.BricksReceived.ToString().Contains(ReceivedSearchTerm, StringComparison.OrdinalIgnoreCase)
+                || rcv.ReceivedDate.ToString("dd/MM/yyyy").Contains(ReceivedSearchTerm, StringComparison.OrdinalIgnoreCase)
+                || $"{rcv.ReceivedBy.FirstName} {rcv.ReceivedBy.LastName}".Contains(ReceivedSearchTerm, StringComparison.OrdinalIgnoreCase));
 
         // Order CRUD
         public void OpenAddOrderModal()

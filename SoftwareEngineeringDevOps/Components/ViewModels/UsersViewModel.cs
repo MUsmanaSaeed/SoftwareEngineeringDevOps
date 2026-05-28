@@ -31,6 +31,14 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             : UserRole.Standard;
 
         public long CurrentUserId => _authService.CurrentUser?.Id ?? 0;
+        public string UsersSearchTerm { get; set; } = string.Empty;
+
+        public IEnumerable<IUser> FilteredUsers =>
+            Users.Where(user =>
+                string.IsNullOrWhiteSpace(UsersSearchTerm)
+                || user.Username.Contains(UsersSearchTerm, StringComparison.OrdinalIgnoreCase)
+                || $"{user.FirstName} {user.LastName}".Contains(UsersSearchTerm, StringComparison.OrdinalIgnoreCase)
+                || (user.IsAdmin ? "Admin" : user.IsEditor ? "Editor" : "Standard").Contains(UsersSearchTerm, StringComparison.OrdinalIgnoreCase));
 
         public async Task LoadUsers()
         {

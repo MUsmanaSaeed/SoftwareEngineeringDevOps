@@ -11,12 +11,15 @@
     <div class="split-left">
         <div class="panel-header">
             <h3>Bricks</h3>
-            @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanCreate(ViewModel.CurrentUserRole))
-            {
-                <button class="btn btn-add" @onclick="ViewModel.OpenAddModal">
-                    <span class="icon">&#xE710;</span>
-                </button>
-            }
+            <div class="panel-header-actions">
+                <input class="form-input panel-header-search" placeholder="Search bricks..." @bind="ViewModel.BricksSearchTerm" @bind:event="oninput" />
+                @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanCreate(ViewModel.CurrentUserRole))
+                {
+                    <button class="btn btn-add" @onclick="ViewModel.OpenAddModal">
+                        <span class="icon">&#xE710;</span>
+                    </button>
+                }
+            </div>
         </div>
         <div class="data-table-container">
             <table class="data-table">
@@ -28,7 +31,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var brick in ViewModel.Bricks)
+                    @foreach (var brick in ViewModel.FilteredBricks)
                     {
                         <tr class="@(ViewModel.SelectedBrick?.Id == brick.Id ? "selected" : "")"
                             @onclick="() => HandleSelect(brick)">
@@ -79,6 +82,9 @@
                     <h4>Orders</h4>
                     @if (ViewModel.SelectedBrickOrders.Any())
                     {
+                        <div class="table-search table-search-sm">
+                            <input class="form-input" placeholder="Search orders..." @bind="ViewModel.BrickOrdersSearchTerm" @bind:event="oninput" />
+                        </div>
                         <table class="data-table data-table-sm">
                             <thead>
                                 <tr>
@@ -88,7 +94,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var order in ViewModel.SelectedBrickOrders)
+                                @foreach (var order in ViewModel.FilteredSelectedBrickOrders)
                                 {
                                     <tr>
                                         <td><a href="/brick-orders?orderNo=@order.OrderNo">@order.OrderNo</a></td>

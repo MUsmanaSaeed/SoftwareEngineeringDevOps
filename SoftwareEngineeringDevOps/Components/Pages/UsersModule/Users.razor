@@ -15,9 +15,12 @@
     <div class="split-left">
         <div class="panel-header">
             <h3>Users</h3>
-            <button class="btn btn-add" @onclick="ViewModel.OpenAddModal">
-                <span class="icon">&#xE710;</span>
-            </button>
+            <div class="panel-header-actions">
+                <input class="form-input panel-header-search" placeholder="Search users..." @bind="ViewModel.UsersSearchTerm" @bind:event="oninput" />
+                <button class="btn btn-add" @onclick="ViewModel.OpenAddModal">
+                    <span class="icon">&#xE710;</span>
+                </button>
+            </div>
         </div>
         <div class="data-table-container">
             <table class="data-table">
@@ -29,7 +32,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var user in ViewModel.Users)
+                    @foreach (var user in ViewModel.FilteredUsers)
                     {
                         <tr class="@(ViewModel.SelectedUser?.Id == user.Id ? "selected" : "")"
                             @onclick="() => ViewModel.SelectUser(user)">

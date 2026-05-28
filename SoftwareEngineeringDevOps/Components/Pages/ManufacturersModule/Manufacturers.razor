@@ -11,12 +11,15 @@
     <div class="split-left">
         <div class="panel-header">
             <h3>Manufacturers</h3>
-            @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanCreate(ViewModel.CurrentUserRole))
-            {
-                <button class="btn btn-add" @onclick="ViewModel.OpenAddModal">
-                    <span class="icon">&#xE710;</span>
-                </button>
-            }
+            <div class="panel-header-actions">
+                <input class="form-input panel-header-search" placeholder="Search manufacturers..." @bind="ViewModel.ManufacturersSearchTerm" @bind:event="oninput" />
+                @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanCreate(ViewModel.CurrentUserRole))
+                {
+                    <button class="btn btn-add" @onclick="ViewModel.OpenAddModal">
+                        <span class="icon">&#xE710;</span>
+                    </button>
+                }
+            </div>
         </div>
         <div class="data-table-container">
             <table class="data-table">
@@ -28,7 +31,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var manufacturer in ViewModel.Manufacturers)
+                    @foreach (var manufacturer in ViewModel.FilteredManufacturers)
                     {
                         <tr class="@(ViewModel.SelectedManufacturer?.Id == manufacturer.Id ? "selected" : "")"
                             @onclick="() => HandleSelect(manufacturer)">

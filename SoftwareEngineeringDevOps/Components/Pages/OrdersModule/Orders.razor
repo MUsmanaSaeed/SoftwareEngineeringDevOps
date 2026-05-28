@@ -11,12 +11,15 @@
     <div class="split-left">
         <div class="panel-header">
             <h3>Orders</h3>
-            @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanCreate(ViewModel.CurrentUserRole))
-            {
-                <button class="btn btn-add" @onclick="ViewModel.OpenAddOrderModal">
-                    <span class="icon">&#xE710;</span>
-                </button>
-            }
+            <div class="panel-header-actions">
+                <input class="form-input panel-header-search" placeholder="Search orders..." @bind="ViewModel.OrderGroupsSearchTerm" @bind:event="oninput" />
+                @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanCreate(ViewModel.CurrentUserRole))
+                {
+                    <button class="btn btn-add" @onclick="ViewModel.OpenAddOrderModal">
+                        <span class="icon">&#xE710;</span>
+                    </button>
+                }
+            </div>
         </div>
         <div class="data-table-container">
             <table class="data-table">
@@ -28,7 +31,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var group in ViewModel.OrderGroups)
+                    @foreach (var group in ViewModel.FilteredOrderGroups)
                     {
                         <tr class="@(ViewModel.SelectedOrderNo == group.Key ? "selected" : "")"
                             @onclick="() => HandleSelectGroup(group.Key)">
@@ -102,6 +105,9 @@
                                     <h5>Received Batches</h5>
                                     @if (ViewModel.ReceivedByOrderLine.TryGetValue(line.Id, out var receivedItems) && receivedItems.Any())
                                     {
+                                        <div class="table-search table-search-sm">
+                                            <input class="form-input" placeholder="Search received..." @bind="ViewModel.ReceivedSearchTerm" @bind:event="oninput" />
+                                        </div>
                                         <table class="data-table data-table-sm">
                                             <thead>
                                                 <tr>
@@ -112,7 +118,7 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @foreach (var rcv in receivedItems)
+                                                @foreach (var rcv in ViewModel.FilterReceivedItems(receivedItems))
                                                 {
                                                     <tr>
                                                         <td>@rcv.BricksReceived</td>

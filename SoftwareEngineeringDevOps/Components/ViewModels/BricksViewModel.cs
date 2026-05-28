@@ -38,6 +38,8 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public List<string> ValidationErrors { get; set; } = new();
         public string? ErrorMessage { get; set; }
         public string ManufacturerSearch { get; set; } = string.Empty;
+        public string BricksSearchTerm { get; set; } = string.Empty;
+        public string BrickOrdersSearchTerm { get; set; } = string.Empty;
 
         public UserRole CurrentUserRole => _authService.CurrentUser != null
             ? RoleHelper.GetRole(_authService.CurrentUser)
@@ -47,6 +49,20 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             string.IsNullOrWhiteSpace(ManufacturerSearch)
                 ? Manufacturers
                 : Manufacturers.Where(m => m.Name.Contains(ManufacturerSearch, StringComparison.OrdinalIgnoreCase));
+
+        public IEnumerable<IBrick> FilteredBricks =>
+            Bricks.Where(brick =>
+                string.IsNullOrWhiteSpace(BricksSearchTerm)
+                || brick.Name.Contains(BricksSearchTerm, StringComparison.OrdinalIgnoreCase)
+                || brick.Manufacturer.Name.Contains(BricksSearchTerm, StringComparison.OrdinalIgnoreCase)
+                || FormatPrice(brick.Price).Contains(BricksSearchTerm, StringComparison.OrdinalIgnoreCase));
+
+        public IEnumerable<IBrickOrder> FilteredSelectedBrickOrders =>
+            SelectedBrickOrders.Where(order =>
+                string.IsNullOrWhiteSpace(BrickOrdersSearchTerm)
+                || order.OrderNo.Contains(BrickOrdersSearchTerm, StringComparison.OrdinalIgnoreCase)
+                || order.BricksOrdered.ToString().Contains(BrickOrdersSearchTerm, StringComparison.OrdinalIgnoreCase)
+                || order.OrderedDate.ToString("dd/MM/yyyy").Contains(BrickOrdersSearchTerm, StringComparison.OrdinalIgnoreCase));
 
         public async Task LoadBricks()
         {
