@@ -2,9 +2,16 @@
 @inject SoftwareEngineeringDevOps.App.Auth.IAuthService AuthService
 @inject NavigationManager Navigation
 
+@if (!_authChecked)
+{
+    <div class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+    return;
+}
+
 @if (!AuthService.IsAuthenticated)
 {
-    Navigation.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(Navigation.ToBaseRelativePath(Navigation.Uri))}", forceLoad: false);
     return;
 }
 
@@ -45,12 +52,6 @@
         </div>
     </aside>
     <main class="main-content">
-        @if (IsLoading)
-        {
-            <div class="loading-overlay">
-                <div class="loading-spinner"></div>
-            </div>
-        }
         <article class="page-content">
             @Body
         </article>
@@ -66,11 +67,23 @@
 </div>
 
 @code {
-    private bool IsLoading { get; set; }
+    private bool _authChecked;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (!firstRender) return;
+
         await AuthService.GetCurrentUserAsync();
+        _authChecked = true;
+
+        if (!AuthService.IsAuthenticated)
+        {
+            var returnUrl = "/" + Navigation.ToBaseRelativePath(Navigation.Uri);
+            Navigation.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(returnUrl)}", forceLoad: false);
+            return;
+        }
+
+        StateHasChanged();
     }
 
     private async Task HandleLogout()
