@@ -75,6 +75,12 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
                 return false;
             }
 
+            if (Users.Any(u => u.Username.Equals(NewUserModel.Username, StringComparison.OrdinalIgnoreCase)))
+            {
+                ValidationErrors.Add("A user with that username already exists.");
+                return false;
+            }
+
             IsLoading = true;
             await _usersMediator.Insert(NewUserModel);
             await LoadUsers();
@@ -105,6 +111,12 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             if (errors.Count > 0)
             {
                 ValidationErrors = errors;
+                return false;
+            }
+
+            if (Users.Any(u => u.Id != EditUserModel.Id && u.Username.Equals(EditUserModel.Username, StringComparison.OrdinalIgnoreCase)))
+            {
+                ValidationErrors.Add("A user with that username already exists.");
                 return false;
             }
 
