@@ -1,4 +1,5 @@
 @page "/bricks"
+@page "/bricks/{SelectedId:long}"
 @inject SoftwareEngineeringDevOps.App.Auth.IAuthService AuthService
 @inject SoftwareEngineeringDevOps.App.Bricks.IBricksMediator BricksMediator
 @inject SoftwareEngineeringDevOps.App.Manufacturers.IManufacturersMediator ManufacturersMediator
@@ -75,7 +76,7 @@
                     <div class="detail-row"><span class="label">Voids:</span><span>@ViewModel.SelectedBrick.Voids%</span></div>
                     <div class="detail-row">
                         <span class="label">Manufacturer:</span>
-                        <a href="/manufacturers?id=@ViewModel.SelectedBrick.Manufacturer.Id">@ViewModel.SelectedBrick.Manufacturer.Name</a>
+                        <a href="/manufacturers/@ViewModel.SelectedBrick.Manufacturer.Id">@ViewModel.SelectedBrick.Manufacturer.Name</a>
                     </div>
                 </div>
                 <div class="detail-section">
@@ -97,7 +98,7 @@
                                 @foreach (var order in ViewModel.FilteredSelectedBrickOrders)
                                 {
                                     <tr>
-                                        <td><a href="/brick-orders?orderNo=@order.OrderNo">@order.OrderNo</a></td>
+                                        <td><a href="/orders/@order.OrderNo">@order.OrderNo</a></td>
                                         <td>@order.BricksOrdered</td>
                                         <td>@order.OrderedDate.ToString("dd/MM/yyyy")</td>
                                     </tr>
@@ -306,7 +307,7 @@
     [SupplyParameterFromQuery(Name = "action")]
     public string? Action { get; set; }
 
-    [SupplyParameterFromQuery(Name = "id")]
+    [Parameter]
     public long? SelectedId { get; set; }
 
     protected override async Task OnInitializedAsync()
@@ -329,6 +330,7 @@
     private async Task HandleSelect(global::SoftwareEngineeringDevOps.App.Bricks.IBrick brick)
     {
         await ViewModel.SelectBrick(brick);
+        Navigation.NavigateTo($"/bricks/{brick.Id}", forceLoad: false, replace: true);
     }
 
     private async Task HandleOpenDelete(global::SoftwareEngineeringDevOps.App.Bricks.IBrick brick)

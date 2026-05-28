@@ -1,4 +1,5 @@
-@page "/brick-orders"
+@page "/orders"
+@page "/orders/{QueryOrderNo}"
 @inject SoftwareEngineeringDevOps.App.Auth.IAuthService AuthService
 @inject SoftwareEngineeringDevOps.App.BrickOrders.IBrickOrdersMediator OrdersMediator
 @inject SoftwareEngineeringDevOps.App.BrickOrdersReceived.IBrickOrdersReceivedMediator ReceivedMediator
@@ -373,7 +374,7 @@
 @code {
     private Components.ViewModels.OrdersViewModel ViewModel { get; set; } = null!;
 
-    [SupplyParameterFromQuery(Name = "orderNo")]
+    [Parameter]
     public string? QueryOrderNo { get; set; }
 
     [SupplyParameterFromQuery(Name = "action")]
@@ -398,6 +399,7 @@
     private async Task HandleSelectGroup(string orderNo)
     {
         await ViewModel.SelectOrderGroup(orderNo);
+        Navigation.NavigateTo($"/orders/{orderNo}", forceLoad: false, replace: true);
     }
 
     private async Task HandleAddOrder()

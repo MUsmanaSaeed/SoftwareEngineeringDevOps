@@ -1,4 +1,5 @@
 @page "/manufacturers"
+@page "/manufacturers/{SelectedId:long}"
 @inject SoftwareEngineeringDevOps.App.Auth.IAuthService AuthService
 @inject SoftwareEngineeringDevOps.App.Manufacturers.IManufacturersMediator ManufacturersMediator
 @inject SoftwareEngineeringDevOps.App.Bricks.IBricksMediator BricksMediator
@@ -239,7 +240,7 @@
     [SupplyParameterFromQuery(Name = "action")]
     public string? Action { get; set; }
 
-    [SupplyParameterFromQuery(Name = "id")]
+    [Parameter]
     public long? SelectedId { get; set; }
 
     protected override async Task OnInitializedAsync()
@@ -266,6 +267,7 @@
     private async Task HandleSelect(global::SoftwareEngineeringDevOps.App.Manufacturers.IManufacturer manufacturer)
     {
         await ViewModel.SelectManufacturer(manufacturer);
+        Navigation.NavigateTo($"/manufacturers/{manufacturer.Id}", forceLoad: false, replace: true);
     }
 
     private async Task HandleOpenDelete(global::SoftwareEngineeringDevOps.App.Manufacturers.IManufacturer manufacturer)
