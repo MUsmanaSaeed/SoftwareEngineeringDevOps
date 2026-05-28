@@ -77,13 +77,26 @@
                     <div class="detail-row"><span class="label">Email:</span><span>@ViewModel.SelectedManufacturer.Email</span></div>
                 </div>
                 <div class="detail-section">
-                    <h4>Bricks</h4>
-                    <div class="brick-list">
-                        @foreach (var brick in ViewModel.SelectedManufacturerBricks)
+                    <div class="detail-section-header">
+                        <h4>Bricks</h4>
+                        @if (ViewModel.SelectedManufacturerBricks.Any())
                         {
-                            <a class="brick-link" href="/bricks?id=@brick.Id">@brick.Name</a>
+                            <input class="form-input" placeholder="Search bricks..." @bind="ViewModel.ManufacturerBricksSearchTerm" @bind:event="oninput" />
                         }
                     </div>
+                    @if (ViewModel.SelectedManufacturerBricks.Any())
+                    {
+                        <div class="brick-list">
+                            @foreach (var brick in ViewModel.FilteredSelectedManufacturerBricks)
+                            {
+                                <div class="brick-link" @onclick="() => HandleBrickClick(brick.Id)">@brick.Name</div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">No bricks from this manufacturer.</p>
+                    }
                 </div>
             </div>
         }
@@ -291,5 +304,10 @@
     {
         var success = await ViewModel.DeleteManufacturer();
         if (success) Navigation.NavigateTo("/manufacturers", forceLoad: false, replace: true);
+    }
+
+    private void HandleBrickClick(long brickId)
+    {
+        Navigation.NavigateTo($"/bricks/{brickId}");
     }
 }

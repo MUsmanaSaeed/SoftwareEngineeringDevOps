@@ -39,6 +39,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public List<string> DeletionBlockedBricks { get; set; } = new();
         public List<string> ChildBrickNames { get; set; } = new();
         public string ManufacturersSearchTerm { get; set; } = string.Empty;
+        public string ManufacturerBricksSearchTerm { get; set; } = string.Empty;
 
         public UserRole CurrentUserRole => _authService.CurrentUser != null
             ? RoleHelper.GetRole(_authService.CurrentUser)
@@ -50,6 +51,11 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
                 || manufacturer.Name.Contains(ManufacturersSearchTerm, StringComparison.OrdinalIgnoreCase)
                 || manufacturer.Email.Contains(ManufacturersSearchTerm, StringComparison.OrdinalIgnoreCase)
                 || manufacturer.PhoneNo.Contains(ManufacturersSearchTerm, StringComparison.OrdinalIgnoreCase));
+
+        public IEnumerable<IBrick> FilteredSelectedManufacturerBricks =>
+            SelectedManufacturerBricks.Where(brick =>
+                string.IsNullOrWhiteSpace(ManufacturerBricksSearchTerm)
+                || brick.Name.Contains(ManufacturerBricksSearchTerm, StringComparison.OrdinalIgnoreCase));
 
         public async Task LoadManufacturers()
         {

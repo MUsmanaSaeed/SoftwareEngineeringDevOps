@@ -521,6 +521,26 @@ html[data-theme="light"] .logo-light {
         color: var(--text-secondary);
     }
 
+.detail-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    gap: 1rem;
+}
+
+    .detail-section-header h4 {
+        margin-bottom: 0;
+        font-size: 1rem;
+        color: var(--text-secondary);
+    }
+
+    .detail-section-header .form-input {
+        width: 250px;
+        padding: 0.45rem 0.65rem;
+        font-size: 0.85rem;
+    }
+
 .empty-detail {
     display: flex;
     align-items: center;
@@ -1060,10 +1080,20 @@ html[data-theme="light"] .logo-light {
     border-radius: 4px;
     font-size: 0.85rem;
     display: inline-block;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    transform: scale(1);
+    user-select: none;
 }
 
     .brick-link:hover {
         background: var(--bg-tertiary);
+        transform: scale(1.02);
+    }
+
+    .brick-link:active {
+        transform: scale(0.96);
+        background: var(--border-color);
     }
 
 /* ============================================

@@ -97,8 +97,8 @@
                             <tbody>
                                 @foreach (var order in ViewModel.FilteredSelectedBrickOrders)
                                 {
-                                    <tr>
-                                        <td><a href="/orders/@order.OrderNo">@order.OrderNo</a></td>
+                                    <tr @onclick="() => HandleOrderClick(order.OrderNo)">
+                                        <td>@order.OrderNo</td>
                                         <td>@order.BricksOrdered</td>
                                         <td>@order.OrderedDate.ToString("dd/MM/yyyy")</td>
                                     </tr>
@@ -354,5 +354,10 @@
     {
         var success = await ViewModel.DeleteBrick();
         if (success) Navigation.NavigateTo("/bricks", forceLoad: false, replace: true);
+    }
+
+    private void HandleOrderClick(string orderNo)
+    {
+        Navigation.NavigateTo($"/orders/{orderNo}");
     }
 }
