@@ -23,26 +23,35 @@
             </div>
         </div>
         <div class="data-table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Manufacturer</th>
-                        <th>Price</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var brick in ViewModel.FilteredBricks)
-                    {
-                        <tr class="@(ViewModel.SelectedBrick?.Id == brick.Id ? "selected" : "")"
-                            @onclick="() => HandleSelect(brick)">
-                            <td>@brick.Name</td>
-                            <td>@brick.Manufacturer.Name</td>
-                            <td>@ViewModel.FormatPrice(brick.Price)</td>
+            @if (ViewModel.FilteredBricks.Any())
+            {
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Manufacturer</th>
+                            <th>Price</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var brick in ViewModel.FilteredBricks)
+                        {
+                            <tr class="@(ViewModel.SelectedBrick?.Id == brick.Id ? "selected" : "")"
+                                @onclick="() => HandleSelect(brick)">
+                                <td>@brick.Name</td>
+                                <td>@brick.Manufacturer.Name</td>
+                                <td>@ViewModel.FormatPrice(brick.Price)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="no-results">
+                    <p>No bricks found</p>
+                </div>
+            }
         </div>
     </div>
     <div class="split-right">
@@ -86,25 +95,34 @@
                         <div class="table-search table-search-sm">
                             <input class="form-input" placeholder="Search orders..." @bind="ViewModel.BrickOrdersSearchTerm" @bind:event="oninput" />
                         </div>
-                        <table class="data-table data-table-sm">
-                            <thead>
-                                <tr>
-                                    <th>Order No</th>
-                                    <th>Qty</th>
-                                    <th>Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var order in ViewModel.FilteredSelectedBrickOrders)
-                                {
-                                    <tr @onclick="() => HandleOrderClick(order.OrderNo)">
-                                        <td>@order.OrderNo</td>
-                                        <td>@order.BricksOrdered</td>
-                                        <td>@order.OrderedDate.ToString("dd/MM/yyyy")</td>
+                        @if (ViewModel.FilteredSelectedBrickOrders.Any())
+                        {
+                            <table class="data-table data-table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Order No</th>
+                                        <th>Qty</th>
+                                        <th>Date</th>
                                     </tr>
-                                }
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    @foreach (var order in ViewModel.FilteredSelectedBrickOrders)
+                                    {
+                                        <tr @onclick="() => HandleOrderClick(order.OrderNo)">
+                                            <td>@order.OrderNo</td>
+                                            <td>@order.BricksOrdered</td>
+                                            <td>@order.OrderedDate.ToString("dd/MM/yyyy")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                        else
+                        {
+                            <div class="no-results">
+                                <p>No orders found</p>
+                            </div>
+                        }
                     }
                     else
                     {

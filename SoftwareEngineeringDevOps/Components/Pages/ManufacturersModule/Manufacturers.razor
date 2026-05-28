@@ -23,26 +23,35 @@
             </div>
         </div>
         <div class="data-table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Phone</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var manufacturer in ViewModel.FilteredManufacturers)
-                    {
-                        <tr class="@(ViewModel.SelectedManufacturer?.Id == manufacturer.Id ? "selected" : "")"
-                            @onclick="() => HandleSelect(manufacturer)">
-                            <td>@manufacturer.Name</td>
-                            <td>@manufacturer.Email</td>
-                            <td>@manufacturer.PhoneNo</td>
+            @if (ViewModel.FilteredManufacturers.Any())
+            {
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var manufacturer in ViewModel.FilteredManufacturers)
+                        {
+                            <tr class="@(ViewModel.SelectedManufacturer?.Id == manufacturer.Id ? "selected" : "")"
+                                @onclick="() => HandleSelect(manufacturer)">
+                                <td>@manufacturer.Name</td>
+                                <td>@manufacturer.Email</td>
+                                <td>@manufacturer.PhoneNo</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="no-results">
+                    <p>No manufacturers found</p>
+                </div>
+            }
         </div>
     </div>
     <div class="split-right">
@@ -86,12 +95,21 @@
                     </div>
                     @if (ViewModel.SelectedManufacturerBricks.Any())
                     {
-                        <div class="brick-list">
-                            @foreach (var brick in ViewModel.FilteredSelectedManufacturerBricks)
-                            {
-                                <div class="brick-link" @onclick="() => HandleBrickClick(brick.Id)">@brick.Name</div>
-                            }
-                        </div>
+                        @if (ViewModel.FilteredSelectedManufacturerBricks.Any())
+                        {
+                            <div class="brick-list">
+                                @foreach (var brick in ViewModel.FilteredSelectedManufacturerBricks)
+                                {
+                                    <div class="brick-link" @onclick="() => HandleBrickClick(brick.Id)">@brick.Name</div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="no-results">
+                                <p>No bricks found</p>
+                            </div>
+                        }
                     }
                     else
                     {

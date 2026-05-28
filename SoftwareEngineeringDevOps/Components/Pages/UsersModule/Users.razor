@@ -24,26 +24,35 @@
             </div>
         </div>
         <div class="data-table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Username</th>
-                        <th>Name</th>
-                        <th>Role</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var user in ViewModel.FilteredUsers)
-                    {
-                        <tr class="@(ViewModel.SelectedUser?.Id == user.Id ? "selected" : "")"
-                            @onclick="() => HandleSelect(user)">
-                            <td>@user.Username</td>
-                            <td>@user.FirstName @user.LastName</td>
-                            <td>@(user.IsAdmin ? "Admin" : user.IsEditor ? "Editor" : "Standard")</td>
+            @if (ViewModel.FilteredUsers.Any())
+            {
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Name</th>
+                            <th>Role</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in ViewModel.FilteredUsers)
+                        {
+                            <tr class="@(ViewModel.SelectedUser?.Id == user.Id ? "selected" : "")"
+                                @onclick="() => HandleSelect(user)">
+                                <td>@user.Username</td>
+                                <td>@user.FirstName @user.LastName</td>
+                                <td>@(user.IsAdmin ? "Admin" : user.IsEditor ? "Editor" : "Standard")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="no-results">
+                    <p>No users found</p>
+                </div>
+            }
         </div>
     </div>
     <div class="split-right">

@@ -23,26 +23,35 @@
             </div>
         </div>
         <div class="data-table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Order No</th>
-                        <th>Lines</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var group in ViewModel.FilteredOrderGroups)
-                    {
-                        <tr class="@(ViewModel.SelectedOrderNo == group.Key ? "selected" : "")"
-                            @onclick="() => HandleSelectGroup(group.Key)">
-                            <td>@group.Key</td>
-                            <td>@group.Count()</td>
-                            <td>@group.First().OrderedDate.ToString("dd/MM/yyyy")</td>
+            @if (ViewModel.FilteredOrderGroups.Any())
+            {
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Order No</th>
+                            <th>Lines</th>
+                            <th>Date</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var group in ViewModel.FilteredOrderGroups)
+                        {
+                            <tr class="@(ViewModel.SelectedOrderNo == group.Key ? "selected" : "")"
+                                @onclick="() => HandleSelectGroup(group.Key)">
+                                <td>@group.Key</td>
+                                <td>@group.Count()</td>
+                                <td>@group.First().OrderedDate.ToString("dd/MM/yyyy")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="no-results">
+                    <p>No orders found</p>
+                </div>
+            }
         </div>
     </div>
     <div class="split-right">

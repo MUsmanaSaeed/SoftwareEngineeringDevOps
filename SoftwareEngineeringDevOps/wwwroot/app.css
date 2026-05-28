@@ -550,6 +550,16 @@ html[data-theme="light"] .logo-light {
     font-size: 0.9rem;
 }
 
+.no-results {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 200px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
 /* ============================================
    Buttons
    ============================================ */
