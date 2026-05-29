@@ -69,7 +69,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public async Task<bool> AddUser()
         {
             ValidationErrors.Clear();
-            var errors = InputValidator.ValidateUser(NewUserModel, requireLastName: false);
+            var errors = InputValidator.ValidateUser(NewUserModel, requireLastName: false, requireStrongPassword: false);
             if (errors.Count > 0)
             {
                 ValidationErrors = errors;
@@ -108,7 +108,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             if (EditUserModel == null) return false;
 
             ValidationErrors.Clear();
-            var errors = InputValidator.ValidateUser(EditUserModel, requireLastName: false);
+            var errors = InputValidator.ValidateUser(EditUserModel, requireLastName: false, requireStrongPassword: false);
             if (errors.Count > 0)
             {
                 ValidationErrors = errors;
