@@ -193,6 +193,26 @@ html[data-theme="dark"] .auth-logo-img {
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.nav-logo-btn {
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: inline-block;
+    border-radius: 8px;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+    .nav-logo-btn:hover {
+        transform: scale(1.06);
+        opacity: 0.85;
+    }
+
+    .nav-logo-btn:active {
+        transform: scale(0.94);
+        opacity: 1;
+    }
+
 .nav-logo {
     max-width: 160px;
     height: auto;

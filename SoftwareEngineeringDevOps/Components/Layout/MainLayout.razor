@@ -18,22 +18,12 @@
 <div class="app-layout">
     <aside class="side-nav">
         <div class="side-nav-header">
-            <img src="logos/acs_logo_white.png" alt="ACS Logo" class="nav-logo logo-dark" />
-            <img src="logos/acs_logo_black.png" alt="ACS Logo" class="nav-logo logo-light" />
+            <button class="nav-logo-btn" @onclick='() => Navigation.NavigateTo("/")' title="Go to home">
+                <img src="logos/acs_logo_white.png" alt="ACS Logo" class="nav-logo logo-dark" />
+                <img src="logos/acs_logo_black.png" alt="ACS Logo" class="nav-logo logo-light" />
+            </button>
         </div>
         <nav class="side-nav-menu">
-            <NavLink class="nav-item" href="manufacturers" Match="NavLinkMatch.Prefix">
-                <span class="icon">&#xE731;</span>
-                <span class="nav-text">Manufacturers</span>
-            </NavLink>
-            <NavLink class="nav-item" href="bricks" Match="NavLinkMatch.Prefix">
-                <span class="icon">&#xE80F;</span>
-                <span class="nav-text">Bricks</span>
-            </NavLink>
-            <NavLink class="nav-item" href="orders" Match="NavLinkMatch.Prefix">
-                <span class="icon">&#xE719;</span>
-                <span class="nav-text">Orders</span>
-            </NavLink>
             @if (AuthService.CurrentUser?.IsAdmin == true)
             {
                 <NavLink class="nav-item" href="users" Match="NavLinkMatch.Prefix">
@@ -41,6 +31,18 @@
                     <span class="nav-text">Users</span>
                 </NavLink>
             }
+            <NavLink class="nav-item" href="manufacturers" Match="NavLinkMatch.Prefix">
+                <span class="icon">&#xE731;</span>
+                <span class="nav-text">Manufacturers</span>
+            </NavLink>
+            <NavLink class="nav-item" href="bricks" Match="NavLinkMatch.Prefix">
+                <span class="icon">&#xECA5;</span>
+                <span class="nav-text">Bricks</span>
+            </NavLink>
+            <NavLink class="nav-item" href="orders" Match="NavLinkMatch.Prefix">
+                <span class="icon">&#xE719;</span>
+                <span class="nav-text">Orders</span>
+            </NavLink>
         </nav>
         <div class="side-nav-footer">
             <div class="user-info">
