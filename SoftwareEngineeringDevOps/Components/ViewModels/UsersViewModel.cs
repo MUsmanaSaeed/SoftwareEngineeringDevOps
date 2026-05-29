@@ -38,7 +38,8 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
                 string.IsNullOrWhiteSpace(UsersSearchTerm)
                 || user.Username.Contains(UsersSearchTerm, StringComparison.OrdinalIgnoreCase)
                 || $"{user.FirstName} {user.LastName}".Contains(UsersSearchTerm, StringComparison.OrdinalIgnoreCase)
-                || (user.IsAdmin ? "Admin" : user.IsEditor ? "Editor" : "Standard").Contains(UsersSearchTerm, StringComparison.OrdinalIgnoreCase));
+                || (user.IsAdmin ? "Admin" : user.IsEditor ? "Editor" : "Standard").Contains(UsersSearchTerm, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(user => user.Username, StringComparer.OrdinalIgnoreCase);
 
         public async Task LoadUsers()
         {

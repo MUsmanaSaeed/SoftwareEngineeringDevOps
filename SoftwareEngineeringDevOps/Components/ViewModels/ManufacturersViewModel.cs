@@ -50,7 +50,8 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
                 string.IsNullOrWhiteSpace(ManufacturersSearchTerm)
                 || manufacturer.Name.Contains(ManufacturersSearchTerm, StringComparison.OrdinalIgnoreCase)
                 || manufacturer.Email.Contains(ManufacturersSearchTerm, StringComparison.OrdinalIgnoreCase)
-                || manufacturer.PhoneNo.Contains(ManufacturersSearchTerm, StringComparison.OrdinalIgnoreCase));
+                || manufacturer.PhoneNo.Contains(ManufacturersSearchTerm, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(manufacturer => manufacturer.Name, StringComparer.OrdinalIgnoreCase);
 
         public IEnumerable<IBrick> FilteredSelectedManufacturerBricks =>
             SelectedManufacturerBricks.Where(brick =>

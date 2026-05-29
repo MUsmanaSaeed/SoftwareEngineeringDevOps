@@ -55,7 +55,8 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
                 string.IsNullOrWhiteSpace(BricksSearchTerm)
                 || brick.Name.Contains(BricksSearchTerm, StringComparison.OrdinalIgnoreCase)
                 || brick.Manufacturer.Name.Contains(BricksSearchTerm, StringComparison.OrdinalIgnoreCase)
-                || FormatPrice(brick.Price).Contains(BricksSearchTerm, StringComparison.OrdinalIgnoreCase));
+                || FormatPrice(brick.Price).Contains(BricksSearchTerm, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(brick => brick.Name, StringComparer.OrdinalIgnoreCase);
 
         public IEnumerable<IBrickOrder> FilteredSelectedBrickOrders =>
             SelectedBrickOrders.Where(order =>

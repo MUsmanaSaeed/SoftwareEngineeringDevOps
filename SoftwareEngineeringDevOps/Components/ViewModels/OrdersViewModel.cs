@@ -63,7 +63,8 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
                 string.IsNullOrWhiteSpace(OrderGroupsSearchTerm)
                 || group.Key.Contains(OrderGroupsSearchTerm, StringComparison.OrdinalIgnoreCase)
                 || group.Count().ToString().Contains(OrderGroupsSearchTerm, StringComparison.OrdinalIgnoreCase)
-                || group.First().OrderedDate.ToString("dd/MM/yyyy").Contains(OrderGroupsSearchTerm, StringComparison.OrdinalIgnoreCase));
+                || group.First().OrderedDate.ToString("dd/MM/yyyy").Contains(OrderGroupsSearchTerm, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase);
 
         public long CurrentUserId => _authService.CurrentUser?.Id ?? 0;
 

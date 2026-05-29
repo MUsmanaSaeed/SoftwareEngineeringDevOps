@@ -67,7 +67,6 @@ namespace SoftwareEngineeringDevOps.App.Validation
             AddIfInvalid(errors, ValidateNonEmpty(u.Username, "Username"));
             AddIfInvalid(errors, ValidateNonEmpty(u.Password, "Password"));
             AddIfInvalid(errors, ValidateNonEmpty(u.FirstName, "First Name"));
-            AddIfInvalid(errors, ValidateNonEmpty(u.LastName, "Last Name"));
             return errors;
         }
 
@@ -77,7 +76,6 @@ namespace SoftwareEngineeringDevOps.App.Validation
             AddIfInvalid(errors, ValidateNonEmpty(u.Username, "Username"));
             AddIfInvalid(errors, ValidateNonEmpty(u.Password, "Password"));
             AddIfInvalid(errors, ValidateNonEmpty(u.FirstName, "First Name"));
-            AddIfInvalid(errors, ValidateNonEmpty(u.LastName, "Last Name"));
             return errors;
         }
 
