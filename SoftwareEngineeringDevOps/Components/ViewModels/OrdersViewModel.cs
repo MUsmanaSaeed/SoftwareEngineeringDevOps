@@ -120,13 +120,42 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             return received.Sum(r => r.BricksReceived);
         }
 
+        public bool HasReceivedItems(long orderLineId)
+        {
+            if (!ReceivedByOrderLine.TryGetValue(orderLineId, out var received)) return false;
+            return received.Any();
+        }
+
+        public bool CanToggleCancellation(IBrickOrder orderLine) =>
+            RoleHelper.CanEdit(CurrentUserRole) && !HasReceivedItems(orderLine.Id);
+
+        public async Task<bool> ToggleOrderCancellation(IBrickOrder orderLine)
+        {
+            ArgumentNullException.ThrowIfNull(orderLine);
+
+            IsLoading = true;
+
+            if (orderLine.CancelledDate == null)
+            {
+                await _ordersMediator.Cancel(orderLine.Id);
+            }
+            else
+            {
+                await _ordersMediator.Uncancel(orderLine.Id);
+            }
+
+            await LoadOrders();
+            if (SelectedOrderNo != null) await SelectOrderGroup(SelectedOrderNo);
+            IsLoading = false;
+            return true;
+        }
+
         public IEnumerable<IBrickOrderReceived> FilterReceivedItems(IEnumerable<IBrickOrderReceived> receivedItems) =>
             receivedItems.Where(rcv =>
                 string.IsNullOrWhiteSpace(ReceivedSearchTerm)
                 || rcv.BricksReceived.ToString().Contains(ReceivedSearchTerm, StringComparison.OrdinalIgnoreCase)
                 || rcv.ReceivedDate.ToString("dd/MM/yyyy").Contains(ReceivedSearchTerm, StringComparison.OrdinalIgnoreCase)
                 || $"{rcv.ReceivedBy.FirstName} {rcv.ReceivedBy.LastName}".Contains(ReceivedSearchTerm, StringComparison.OrdinalIgnoreCase));
-
         // Order CRUD
         public void OpenAddOrderModal()
         {

@@ -70,8 +70,8 @@
                         var pct = ViewModel.GetFulfillmentPercentage(line);
                         var totalRcv = ViewModel.GetTotalReceived(line);
 
-                        <div class="order-line-card">
-                            <div class="order-line-header" @onclick="() => ViewModel.ToggleRowExpansion(line.Id)" style="cursor: pointer;">
+                        <div class="order-line-card @(line.CancelledDate != null ? "order-line-card-cancelled" : string.Empty)">
+                            <div class="order-line-header" @onclick="() => HandleToggleRowExpansion(line)" style="cursor: @(line.CancelledDate == null ? "pointer" : "default");">
                                 <div class="order-line-info">
                                     <strong>@(brick?.Name ?? "Unknown Brick")</strong>
                                     <span class="order-qty">Qty: @line.BricksOrdered</span>
@@ -89,19 +89,28 @@
                                     }
                                     @if (RoleHelper.CanEdit(ViewModel.CurrentUserRole))
                                     {
-                                        <button class="btn btn-edit btn-sm" @onclick="() => ViewModel.OpenEditOrderModal(line)" @onclick:stopPropagation="true">
+                                        <button class="btn btn-edit btn-sm" title="Edit Order Line" @onclick="() => ViewModel.OpenEditOrderModal(line)" @onclick:stopPropagation="true">
                                             <span class="icon">&#xE70F;</span>
                                         </button>
                                     }
                                     @if (RoleHelper.CanDelete(ViewModel.CurrentUserRole))
                                     {
-                                        <button class="btn btn-delete btn-sm" @onclick="() => ViewModel.OpenDeleteOrderConfirm(line)" @onclick:stopPropagation="true">
+                                        <button class="btn btn-delete btn-sm" title="Delete Order Line" @onclick="() => ViewModel.OpenDeleteOrderConfirm(line)" @onclick:stopPropagation="true">
                                             <span class="icon">&#xE74D;</span>
                                         </button>
                                     }
-                                    <button class="btn btn-sm" @onclick="() => ViewModel.ToggleRowExpansion(line.Id)" @onclick:stopPropagation="true">
-                                        <span class="icon">@(ViewModel.IsRowExpanded(line.Id) ? "\uE70E" : "\uE70D")</span>
-                                    </button>
+                                    @if (ViewModel.CanToggleCancellation(line))
+                                    {
+                                        <button class="btn @(line.CancelledDate == null ? "btn-warning" : "btn-add") btn-sm" title="@(line.CancelledDate == null ? "Cancel Order" : "Uncancel Order")" @onclick="() => HandleToggleOrderCancellation(line)" @onclick:stopPropagation="true">
+                                            <span class="icon">@(line.CancelledDate == null ? "\uE711" : "\uE73E")</span>
+                                        </button>
+                                    }
+                                    @if (line.CancelledDate == null)
+                                    {
+                                        <button class="btn btn-sm" title="@(ViewModel.IsRowExpanded(line.Id) ? "Collapse Received Batches" : "Expand Received Batches")" @onclick="() => HandleToggleRowExpansion(line)" @onclick:stopPropagation="true">
+                                            <span class="icon">@(ViewModel.IsRowExpanded(line.Id) ? "\uE70E" : "\uE70D")</span>
+                                        </button>
+                                    }
                                 </div>
                             </div>
                             <div class="progress-bar-container">
@@ -139,13 +148,13 @@
                                                         <td class="row-actions actions-column">
                                                             @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanEdit(ViewModel.CurrentUserRole))
                                                             {
-                                                                <button class="btn btn-edit btn-xs" @onclick="() => ViewModel.OpenEditReceivedModal(rcv)">
+                                                                <button class="btn btn-edit btn-xs" title="Edit Received Batch" @onclick="() => ViewModel.OpenEditReceivedModal(rcv)">
                                                                     <span class="icon">&#xE70F;</span>
                                                                 </button>
                                                             }
                                                             @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanDelete(ViewModel.CurrentUserRole))
                                                             {
-                                                                <button class="btn btn-delete btn-xs" @onclick="() => ViewModel.OpenDeleteReceivedConfirm(rcv)">
+                                                                <button class="btn btn-delete btn-xs" title="Delete Received Batch" @onclick="() => ViewModel.OpenDeleteReceivedConfirm(rcv)">
                                                                     <span class="icon">&#xE74D;</span>
                                                                 </button>
                                                             }
@@ -157,7 +166,7 @@
                                     }
                                     else
                                     {
-                                        <p class="text-muted">No batches received yet.</p>
+                                        <p class="received-empty-message">No batches received yet.</p>
                                     }
                                 </div>
                             }
@@ -413,6 +422,16 @@
         Navigation.NavigateTo($"/orders/{orderNo}", forceLoad: false, replace: true);
     }
 
+    private void HandleToggleRowExpansion(global::SoftwareEngineeringDevOps.App.BrickOrders.IBrickOrder orderLine)
+    {
+        if (orderLine.CancelledDate != null)
+        {
+            return;
+        }
+
+        ViewModel.ToggleRowExpansion(orderLine.Id);
+    }
+
     private async Task HandleAddOrder()
     {
         await ViewModel.AddOrder();
@@ -426,6 +445,11 @@
     private async Task HandleDeleteOrder()
     {
         await ViewModel.DeleteOrder();
+    }
+
+    private async Task HandleToggleOrderCancellation(global::SoftwareEngineeringDevOps.App.BrickOrders.IBrickOrder orderLine)
+    {
+        await ViewModel.ToggleOrderCancellation(orderLine);
     }
 
     private async Task HandleAddReceived()
