@@ -596,6 +596,8 @@ html[data-theme="light"] .logo-light {
     cursor: pointer;
     transition: all 0.2s;
     text-decoration: none;
+    background: none;
+    color: var(--text-primary);
 }
 
     .btn:disabled {
@@ -1004,7 +1006,7 @@ html[data-theme="light"] .logo-light {
 .order-lines {
     overflow-y: auto;
     flex: 1;
-    padding: 0 1.5rem 1.5rem;
+    padding: 0 0rem 1.5rem;
 }
 
 .order-line-card {
@@ -1014,23 +1016,6 @@ html[data-theme="light"] .logo-light {
     margin-bottom: 0.75rem;
     overflow: hidden;
 }
-
-.order-line-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem 1rem;
-}
-
-.order-line-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-}
-
-    .order-line-info strong {
-        font-size: 0.9rem;
-    }
 
 .order-qty,
 .order-date {
@@ -1089,11 +1074,6 @@ html[data-theme="light"] .logo-light {
         margin-bottom: 0.5rem;
         color: var(--text-secondary);
     }
-
-.row-actions {
-    display: flex;
-    gap: 0.25rem;
-}
 
 /* ============================================
    Brick Links

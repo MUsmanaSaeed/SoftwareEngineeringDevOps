@@ -66,6 +66,10 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
                 || group.First().OrderedDate.ToString("dd/MM/yyyy").Contains(OrderGroupsSearchTerm, StringComparison.OrdinalIgnoreCase))
             .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase);
 
+        public IEnumerable<IBrickOrder> SortedSelectedOrderLines =>
+            SelectedOrderLines.OrderBy(l => l.CancelledDate != null ? DateTime.MaxValue : l.ExpectedDate)
+                .ThenByDescending(l => l.ExpectedDate);
+
         public long CurrentUserId => _authService.CurrentUser?.Id ?? 0;
 
         public async Task LoadOrders()

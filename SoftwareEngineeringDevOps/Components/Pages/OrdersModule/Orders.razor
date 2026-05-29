@@ -6,6 +6,8 @@
 @inject SoftwareEngineeringDevOps.App.Bricks.IBricksMediator BricksMediator
 @inject NavigationManager Navigation
 
+@using SoftwareEngineeringDevOps.App.Auth
+
 <PageTitle>Orders</PageTitle>
 
 <div class="split-layout">
@@ -62,39 +64,42 @@
                     <h3>Order: @ViewModel.SelectedOrderNo</h3>
                 </div>
                 <div class="order-lines">
-                    @foreach (var line in ViewModel.SelectedOrderLines)
+                    @foreach (var line in ViewModel.SortedSelectedOrderLines)
                     {
                         var brick = ViewModel.Bricks.FirstOrDefault(b => b.Id == line.BrickId);
                         var pct = ViewModel.GetFulfillmentPercentage(line);
                         var totalRcv = ViewModel.GetTotalReceived(line);
 
                         <div class="order-line-card">
-                            <div class="order-line-header">
+                            <div class="order-line-header" @onclick="() => ViewModel.ToggleRowExpansion(line.Id)" style="cursor: pointer;">
                                 <div class="order-line-info">
                                     <strong>@(brick?.Name ?? "Unknown Brick")</strong>
                                     <span class="order-qty">Qty: @line.BricksOrdered</span>
-                                    <span class="order-date">Expected: @line.ExpectedDate.ToString("dd/MM/yyyy")</span>
+                                    <div class="order-dates">
+                                        <span class="order-date">Ordered: @line.OrderedDate.ToString("dd/MM/yyyy")</span>
+                                        <span class="order-date">Expected: @line.ExpectedDate.ToString("dd/MM/yyyy")</span>
+                                    </div>
                                 </div>
                                 <div class="order-line-actions">
-                                    @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanCreate(ViewModel.CurrentUserRole))
+                                    @if (RoleHelper.CanCreate(ViewModel.CurrentUserRole))
                                     {
-                                        <button class="btn btn-add btn-sm" title="Add Received" @onclick="() => ViewModel.OpenAddReceivedModal(line.Id)">
+                                        <button class="btn btn-add btn-sm" title="Add Received" @onclick="() => ViewModel.OpenAddReceivedModal(line.Id)" @onclick:stopPropagation="true">
                                             <span class="icon">&#xE710;</span>
                                         </button>
                                     }
-                                    @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanEdit(ViewModel.CurrentUserRole))
+                                    @if (RoleHelper.CanEdit(ViewModel.CurrentUserRole))
                                     {
-                                        <button class="btn btn-edit btn-sm" @onclick="() => ViewModel.OpenEditOrderModal(line)">
+                                        <button class="btn btn-edit btn-sm" @onclick="() => ViewModel.OpenEditOrderModal(line)" @onclick:stopPropagation="true">
                                             <span class="icon">&#xE70F;</span>
                                         </button>
                                     }
-                                    @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanDelete(ViewModel.CurrentUserRole))
+                                    @if (RoleHelper.CanDelete(ViewModel.CurrentUserRole))
                                     {
-                                        <button class="btn btn-delete btn-sm" @onclick="() => ViewModel.OpenDeleteOrderConfirm(line)">
+                                        <button class="btn btn-delete btn-sm" @onclick="() => ViewModel.OpenDeleteOrderConfirm(line)" @onclick:stopPropagation="true">
                                             <span class="icon">&#xE74D;</span>
                                         </button>
                                     }
-                                    <button class="btn btn-sm" @onclick="() => ViewModel.ToggleRowExpansion(line.Id)">
+                                    <button class="btn btn-sm" @onclick="() => ViewModel.ToggleRowExpansion(line.Id)" @onclick:stopPropagation="true">
                                         <span class="icon">@(ViewModel.IsRowExpanded(line.Id) ? "\uE70E" : "\uE70D")</span>
                                     </button>
                                 </div>
@@ -115,26 +120,23 @@
                                     <h5>Received Batches</h5>
                                     @if (ViewModel.ReceivedByOrderLine.TryGetValue(line.Id, out var receivedItems) && receivedItems.Any())
                                     {
-                                        <div class="table-search table-search-sm">
-                                            <input class="form-input" placeholder="Search received..." @bind="ViewModel.ReceivedSearchTerm" @bind:event="oninput" />
-                                        </div>
                                         <table class="data-table data-table-sm">
                                             <thead>
                                                 <tr>
                                                     <th>Qty</th>
                                                     <th>Date</th>
                                                     <th>By</th>
-                                                    <th></th>
+                                                    <th class="actions-column"></th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @foreach (var rcv in ViewModel.FilterReceivedItems(receivedItems))
+                                                @foreach (var rcv in ViewModel.FilterReceivedItems(receivedItems).OrderByDescending(r => r.ReceivedDate))
                                                 {
                                                     <tr>
                                                         <td>@rcv.BricksReceived</td>
                                                         <td>@rcv.ReceivedDate.ToString("dd/MM/yyyy")</td>
                                                         <td>@rcv.ReceivedBy.FirstName @rcv.ReceivedBy.LastName</td>
-                                                        <td class="row-actions">
+                                                        <td class="row-actions actions-column">
                                                             @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanEdit(ViewModel.CurrentUserRole))
                                                             {
                                                                 <button class="btn btn-edit btn-xs" @onclick="() => ViewModel.OpenEditReceivedModal(rcv)">
