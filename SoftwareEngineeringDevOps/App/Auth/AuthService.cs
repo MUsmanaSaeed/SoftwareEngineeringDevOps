@@ -168,7 +168,7 @@ namespace SoftwareEngineeringDevOps.App.Auth
             var lastName = claims.FirstOrDefault(c => c.Type == ClaimTypes.Surname)?.Value;
             var roles = claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToHashSet(StringComparer.Ordinal);
 
-            if (!long.TryParse(idClaim, out var id) || string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
+            if (!long.TryParse(idClaim, out var id) || string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(firstName))
             {
                 return null;
             }

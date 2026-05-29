@@ -61,21 +61,23 @@ namespace SoftwareEngineeringDevOps.App.Validation
             return errors;
         }
 
-        public static List<string> ValidateUser(Users.NewUser u)
+        public static List<string> ValidateUser(Users.NewUser u, bool requireLastName = true)
         {
             var errors = new List<string>();
             AddIfInvalid(errors, ValidateNonEmpty(u.Username, "Username"));
             AddIfInvalid(errors, ValidateNonEmpty(u.Password, "Password"));
             AddIfInvalid(errors, ValidateNonEmpty(u.FirstName, "First Name"));
+            if (requireLastName) AddIfInvalid(errors, ValidateNonEmpty(u.LastName, "Last Name"));
             return errors;
         }
 
-        public static List<string> ValidateUser(Users.EditUser u)
+        public static List<string> ValidateUser(Users.EditUser u, bool requireLastName = true)
         {
             var errors = new List<string>();
             AddIfInvalid(errors, ValidateNonEmpty(u.Username, "Username"));
             AddIfInvalid(errors, ValidateNonEmpty(u.Password, "Password"));
             AddIfInvalid(errors, ValidateNonEmpty(u.FirstName, "First Name"));
+            if (requireLastName) AddIfInvalid(errors, ValidateNonEmpty(u.LastName, "Last Name"));
             return errors;
         }
 

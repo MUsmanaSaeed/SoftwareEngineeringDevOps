@@ -35,7 +35,7 @@ namespace SoftwareEngineeringDevOps.App.Users.Persistence
                 { "Username", user.Username },
                 { "Password", user.Password },
                 { "FirstName", user.FirstName },
-                { "LastName", user.LastName },
+                { "LastName", user.LastName ?? string.Empty },
                 { "IsAdmin", user.IsAdmin },
                 { "IsEditor", user.IsEditor },
             };
@@ -50,7 +50,7 @@ namespace SoftwareEngineeringDevOps.App.Users.Persistence
                 { "Username", user.Username },
                 { "Password", user.Password },
                 { "FirstName", user.FirstName },
-                { "LastName", user.LastName },
+                { "LastName", user.LastName ?? string.Empty },
                 { "IsAdmin", user.IsAdmin },
                 { "IsEditor", user.IsEditor },
             };
