@@ -170,6 +170,24 @@
     align-items: flex-start;
 }
 
+.order-overall-progress {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    padding: 0.85rem 1rem;
+    margin-bottom: 1rem;
+}
+
+.order-overall-progress-dates {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.65rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+}
+
 .progress-bar-container {
     padding: 0 1rem 1rem;
 }

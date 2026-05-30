@@ -26,11 +26,29 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             _authService = authService;
         }
 
-        public IEnumerable<IBrickOrder> AllOrders { get; set; } = Enumerable.Empty<IBrickOrder>();
-        public IEnumerable<IBrick> Bricks { get; set; } = Enumerable.Empty<IBrick>();
-        public IEnumerable<IGrouping<string, IBrickOrder>> OrderGroups { get; set; } = Enumerable.Empty<IGrouping<string, IBrickOrder>>();
+        private static readonly CultureInfo EnGbCulture = CultureInfo.GetCultureInfo("en-GB");
+
+        // Backing fields for cached/materialized data
+        private List<IBrickOrder> _allOrders = new();
+        private Dictionary<long, IBrick> _brickById = new();
+        private Dictionary<long, List<IBrickOrderReceived>> _allReceivedByOrderLine = new();
+        private List<IGrouping<string, IBrickOrder>> _orderGroups = new();
+        private List<IBrickOrder> _selectedOrderLines = new();
+        private UserRole _currentUserRole;
+        private DateTime _today;
+
+        // Cached aggregates for selected order (invalidated when selection changes)
+        private List<IBrickOrder>? _sortedSelectedOrderLines;
+        private DateTime? _selectedOrderFirstOrderedDate;
+        private DateTime? _selectedOrderLastExpectedDate;
+        private int? _selectedOrderTotalOrdered;
+        private int? _selectedOrderTotalReceived;
+
+        public IEnumerable<IBrickOrder> AllOrders => _allOrders;
+        public IEnumerable<IBrick> Bricks => _brickById.Values;
+        public IEnumerable<IGrouping<string, IBrickOrder>> OrderGroups => _orderGroups;
         public string? SelectedOrderNo { get; set; }
-        public IEnumerable<IBrickOrder> SelectedOrderLines { get; set; } = Enumerable.Empty<IBrickOrder>();
+        public IEnumerable<IBrickOrder> SelectedOrderLines => _selectedOrderLines;
         public Dictionary<long, IEnumerable<IBrickOrderReceived>> ReceivedByOrderLine { get; set; } = new();
         public Dictionary<long, bool> ExpandedRows { get; set; } = new();
 
@@ -38,6 +56,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public EditBrickOrder? EditOrderModel { get; set; }
         public NewBrickOrderReceived NewReceivedModel { get; set; } = new();
         public EditBrickOrderReceived? EditReceivedModel { get; set; }
+        public long? EditReceivedBrickOrderId { get; set; }
 
         public bool IsLoading { get; set; }
         public bool ShowAddOrderModal { get; set; }
@@ -55,50 +74,135 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public string OrderGroupsSearchTerm { get; set; } = string.Empty;
         public string ReceivedSearchTerm { get; set; } = string.Empty;
 
-        public UserRole CurrentUserRole => _authService.CurrentUser != null
-            ? RoleHelper.GetRole(_authService.CurrentUser)
-            : UserRole.Standard;
+        public UserRole CurrentUserRole => _currentUserRole;
 
-        public IEnumerable<IGrouping<string, IBrickOrder>> FilteredOrderGroups =>
-            OrderGroups.Where(group =>
-                string.IsNullOrWhiteSpace(OrderGroupsSearchTerm)
-                || group.Key.Contains(OrderGroupsSearchTerm, StringComparison.OrdinalIgnoreCase)
-                || group.Count().ToString().Contains(OrderGroupsSearchTerm, StringComparison.OrdinalIgnoreCase)
-                || group.First().OrderedDate.ToString("dd/MM/yyyy").Contains(OrderGroupsSearchTerm, StringComparison.OrdinalIgnoreCase))
-            .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase);
+        public IEnumerable<IGrouping<string, IBrickOrder>> FilteredOrderGroups
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(OrderGroupsSearchTerm))
+                {
+                    return _orderGroups.OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
+                }
+
+                return _orderGroups
+                    .Where(group =>
+                    {
+                        var first = group.First();
+                        return group.Key.Contains(OrderGroupsSearchTerm, StringComparison.OrdinalIgnoreCase)
+                            || group.Count().ToString().Contains(OrderGroupsSearchTerm, StringComparison.OrdinalIgnoreCase)
+                            || first.OrderedDate.ToString("dd/MM/yyyy").Contains(OrderGroupsSearchTerm, StringComparison.OrdinalIgnoreCase);
+                    })
+                    .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
+            }
+        }
 
         public IEnumerable<IBrickOrder> SortedSelectedOrderLines =>
-            SelectedOrderLines
+            _sortedSelectedOrderLines ??= _selectedOrderLines
                 .OrderBy(GetOrderLineSortBucket)
                 .ThenByDescending(GetOrderLineSortDate)
                 .ThenByDescending(l => l.OrderedDate)
-                .ThenBy(l => l.Id);
+                .ThenBy(l => l.Id)
+                .ToList();
+
+        public DateTime? SelectedOrderFirstOrderedDate =>
+            _selectedOrderFirstOrderedDate ??= _selectedOrderLines.Count > 0
+                ? _selectedOrderLines.Min(line => line.OrderedDate.Date)
+                : null;
+
+        public DateTime? SelectedOrderLastExpectedDate =>
+            _selectedOrderLastExpectedDate ??= _selectedOrderLines.Count > 0
+                ? _selectedOrderLines.Max(line => line.ExpectedDate.Date)
+                : null;
+
+        public int SelectedOrderTotalOrdered =>
+            _selectedOrderTotalOrdered ??= _selectedOrderLines.Sum(line => line.BricksOrdered);
+
+        public int SelectedOrderTotalReceived =>
+            _selectedOrderTotalReceived ??= _selectedOrderLines.Sum(GetTotalReceived);
+
+        public decimal SelectedOrderFulfillmentPercentage
+        {
+            get
+            {
+                if (SelectedOrderTotalOrdered <= 0 || SelectedOrderTotalReceived <= 0)
+                {
+                    return 0;
+                }
+
+                return Math.Min(100, Math.Round((decimal)SelectedOrderTotalReceived / SelectedOrderTotalOrdered * 100, 1));
+            }
+        }
 
         public long CurrentUserId => _authService.CurrentUser?.Id ?? 0;
-        public DateTime Today => DateTime.Today;
-        public string TodayInputValue => Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        public DateTime Today => _today;
+        public string TodayInputValue => _today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
         public async Task LoadOrders()
         {
             IsLoading = true;
-            AllOrders = await _ordersMediator.GetAllBrickOrders();
-            Bricks = await _bricksMediator.GetAllBricks();
-            OrderGroups = AllOrders.GroupBy(o => o.OrderNo);
+            _today = DateTime.Today;
+            _currentUserRole = _authService.CurrentUser != null
+                ? RoleHelper.GetRole(_authService.CurrentUser)
+                : UserRole.Standard;
+
+            var ordersTask = _ordersMediator.GetAllBrickOrders();
+            var bricksTask = _bricksMediator.GetAllBricks();
+            var receivedTask = _receivedMediator.GetAllBrickOrdersReceived();
+            await Task.WhenAll(ordersTask, bricksTask, receivedTask);
+
+            _allOrders = (await ordersTask).ToList();
+            _brickById = (await bricksTask).ToDictionary(b => b.Id);
+            _allReceivedByOrderLine = (await receivedTask)
+                .GroupBy(r => r.BrickOrderId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+            _orderGroups = _allOrders.GroupBy(o => o.OrderNo).ToList();
             IsLoading = false;
+        }
+
+        /// <summary>
+        /// Synchronously applies the selection so the UI can render immediately.
+        /// Call <see cref="LoadSelectedOrderReceivedAsync"/> afterwards to populate received items.
+        /// </summary>
+        public void ApplyOrderGroupSelection(string orderNo)
+        {
+            SelectedOrderNo = orderNo;
+            _selectedOrderLines = _allOrders.Where(o => o.OrderNo == orderNo).ToList();
+            ReceivedByOrderLine.Clear();
+            ExpandedRows.Clear();
+            InvalidateSelectionCache();
+        }
+
+        /// <summary>
+        /// Populates ReceivedByOrderLine for the currently selected lines from the in-memory cache.
+        /// Returns immediately — no DB calls.
+        /// </summary>
+        public Task LoadSelectedOrderReceivedAsync()
+        {
+            foreach (var line in _selectedOrderLines)
+            {
+                ReceivedByOrderLine[line.Id] = _allReceivedByOrderLine.TryGetValue(line.Id, out var items)
+                    ? items
+                    : [];
+            }
+
+            _selectedOrderTotalReceived = null;
+            return Task.CompletedTask;
         }
 
         public async Task SelectOrderGroup(string orderNo)
         {
-            SelectedOrderNo = orderNo;
-            SelectedOrderLines = AllOrders.Where(o => o.OrderNo == orderNo);
-            ReceivedByOrderLine.Clear();
-            ExpandedRows.Clear();
+            ApplyOrderGroupSelection(orderNo);
+            await LoadSelectedOrderReceivedAsync();
+        }
 
-            foreach (var line in SelectedOrderLines)
-            {
-                var received = await _receivedMediator.GetBrickOrdersReceivedByBrickOrderId(line.Id);
-                ReceivedByOrderLine[line.Id] = received;
-            }
+        private void InvalidateSelectionCache()
+        {
+            _sortedSelectedOrderLines = null;
+            _selectedOrderFirstOrderedDate = null;
+            _selectedOrderLastExpectedDate = null;
+            _selectedOrderTotalOrdered = null;
+            _selectedOrderTotalReceived = null;
         }
 
         public void ToggleRowExpansion(long orderLineId)
@@ -273,18 +377,18 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
 
             if (orderLine.CancelledDate == null)
             {
-                await _ordersMediator.Cancel(orderLine.Id);
-            }
-            else
-            {
-                await _ordersMediator.Uncancel(orderLine.Id);
-            }
+                    await _ordersMediator.Cancel(orderLine.Id);
+                    }
+                    else
+                    {
+                        await _ordersMediator.Uncancel(orderLine.Id);
+                    }
 
-            await LoadOrders();
-            if (SelectedOrderNo != null) await SelectOrderGroup(SelectedOrderNo);
-            IsLoading = false;
-            return true;
-        }
+                    await LoadOrders();
+                    if (SelectedOrderNo != null) await SelectOrderGroup(SelectedOrderNo);
+                    IsLoading = false;
+                    return true;
+                }
 
         public IEnumerable<IBrickOrderReceived> FilterReceivedItems(IEnumerable<IBrickOrderReceived> receivedItems) =>
             receivedItems.Where(rcv =>
@@ -392,11 +496,13 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
 
             IsLoading = true;
 
-            // Delete child received records first
-            var received = await _receivedMediator.GetBrickOrdersReceivedByBrickOrderId(OrderToDelete.Id);
-            foreach (var r in received)
+            // Use the in-memory cache to find child received records — no extra DB call needed
+            if (_allReceivedByOrderLine.TryGetValue(OrderToDelete.Id, out var received))
             {
-                await _receivedMediator.Delete(r.Id);
+                foreach (var r in received)
+                {
+                    await _receivedMediator.Delete(r.Id);
+                }
             }
 
             await _ordersMediator.Delete(OrderToDelete.Id);
@@ -432,6 +538,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             ValidationErrors.Clear();
             NewReceivedModel.ReceivedById = CurrentUserId;
             var errors = InputValidator.ValidateBrickOrderReceived(NewReceivedModel);
+            errors.AddRange(ValidateReceivedDate(NewReceivedModel.BrickOrderId, NewReceivedModel.ReceivedDate));
             if (errors.Count > 0)
             {
                 ValidationErrors = errors;
@@ -450,6 +557,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public void OpenEditReceivedModal(IBrickOrderReceived received)
         {
             EditReceivedModel = new EditBrickOrderReceived(received);
+            EditReceivedBrickOrderId = received.BrickOrderId;
             ValidationErrors.Clear();
             ShowEditReceivedModal = true;
         }
@@ -457,6 +565,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public void CloseEditReceivedModal()
         {
             ShowEditReceivedModal = false;
+            EditReceivedBrickOrderId = null;
             ValidationErrors.Clear();
         }
 
@@ -466,6 +575,11 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
 
             ValidationErrors.Clear();
             var errors = InputValidator.ValidateBrickOrderReceived(EditReceivedModel);
+            if (EditReceivedBrickOrderId.HasValue)
+            {
+                errors.AddRange(ValidateReceivedDate(EditReceivedBrickOrderId.Value, EditReceivedModel.ReceivedDate));
+            }
+
             if (errors.Count > 0)
             {
                 ValidationErrors = errors;
@@ -477,6 +591,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             await LoadOrders();
             if (SelectedOrderNo != null) await SelectOrderGroup(SelectedOrderNo);
             ShowEditReceivedModal = false;
+            EditReceivedBrickOrderId = null;
             IsLoading = false;
             return true;
         }
@@ -523,6 +638,23 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             return errors;
         }
 
-        public string FormatPrice(decimal price) => price.ToString("C2", CultureInfo.GetCultureInfo("en-GB"));
+        private List<string> ValidateReceivedDate(long brickOrderId, DateTime receivedDate)
+        {
+            var errors = new List<string>();
+            var orderLine = AllOrders.FirstOrDefault(order => order.Id == brickOrderId);
+
+            if (orderLine != null && receivedDate.Date < orderLine.OrderedDate.Date)
+            {
+                errors.Add("Received date cannot be less than the order date.");
+            }
+
+            return errors;
+        }
+
+        public string FormatPrice(decimal price) => price.ToString("C2", EnGbCulture);
+
+        /// <summary>Returns the brick for the given id in O(1), or null if not found.</summary>
+        public IBrick? GetBrick(long brickId) =>
+            _brickById.TryGetValue(brickId, out var brick) ? brick : null;
     }
 }

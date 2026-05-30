@@ -25,7 +25,10 @@
             </div>
         </div>
         <div class="data-table-container">
-            @if (ViewModel.FilteredOrderGroups.Any())
+            @{
+                var filteredGroups = ViewModel.FilteredOrderGroups.ToList();
+            }
+            @if (filteredGroups.Count > 0)
             {
                 <table class="data-table">
                     <thead>
@@ -36,13 +39,15 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var group in ViewModel.FilteredOrderGroups)
+                        @foreach (var group in filteredGroups)
                         {
+                            var groupCount = group.Count();
+                            var groupFirst = group.First();
                             <tr class="@(ViewModel.SelectedOrderNo == group.Key ? "selected" : "")"
                                 @onclick="() => HandleSelectGroup(group.Key)">
                                 <td>@group.Key</td>
-                                <td>@group.Count()</td>
-                                <td>@group.First().OrderedDate.ToString("dd/MM/yyyy")</td>
+                                <td>@groupCount</td>
+                                <td>@groupFirst.OrderedDate.ToString("dd/MM/yyyy")</td>
                             </tr>
                         }
                     </tbody>
@@ -69,10 +74,20 @@
                         </button>
                     }
                 </div>
+                <div class="order-overall-progress">
+                    <div class="order-overall-progress-dates">
+                        <span>First Ordered: @(ViewModel.SelectedOrderFirstOrderedDate?.ToString("dd/MM/yyyy") ?? "N/A")</span>
+                        <span>Last Expected: @(ViewModel.SelectedOrderLastExpectedDate?.ToString("dd/MM/yyyy") ?? "N/A")</span>
+                    </div>
+                    <div class="progress-bar-track">
+                        <div class="progress-bar @(ViewModel.SelectedOrderFulfillmentPercentage == 0 ? "progress-bar-empty" : string.Empty)" style="width: @(ViewModel.SelectedOrderFulfillmentPercentage.ToString(System.Globalization.CultureInfo.InvariantCulture))%;"></div>
+                        <span class="progress-bar-label">@ViewModel.SelectedOrderTotalReceived / @ViewModel.SelectedOrderTotalOrdered (@ViewModel.SelectedOrderFulfillmentPercentage%)</span>
+                    </div>
+                </div>
                 <div class="order-lines">
                     @foreach (var line in ViewModel.SortedSelectedOrderLines)
-                    {
-                        var brick = ViewModel.Bricks.FirstOrDefault(b => b.Id == line.BrickId);
+                        {
+                            var brick = ViewModel.GetBrick(line.BrickId);
                         var pct = ViewModel.GetFulfillmentPercentage(line);
                         var totalRcv = ViewModel.GetTotalReceived(line);
                         var statusClass = ViewModel.GetOrderLineStateClass(line);
@@ -437,8 +452,13 @@
 
     private async Task HandleSelectGroup(string orderNo)
     {
-        await ViewModel.SelectOrderGroup(orderNo);
+        // Phase 1: apply selection synchronously so Blazor renders the right panel instantly
+        ViewModel.ApplyOrderGroupSelection(orderNo);
         Navigation.NavigateTo($"/orders/{orderNo}", forceLoad: false, replace: true);
+        StateHasChanged();
+
+        // Phase 2: load received items in the background, then re-render with the data
+        await ViewModel.LoadSelectedOrderReceivedAsync();
     }
 
     private void HandleToggleRowExpansion(global::SoftwareEngineeringDevOps.App.BrickOrders.IBrickOrder orderLine)

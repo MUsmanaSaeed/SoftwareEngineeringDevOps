@@ -10,6 +10,7 @@ using SoftwareEngineeringDevOps.App.Manufacturers;
 using SoftwareEngineeringDevOps.App.Manufacturers.Persistence;
 using SoftwareEngineeringDevOps.App.Users;
 using SoftwareEngineeringDevOps.App.Users.Persistence;
+using SoftwareEngineeringDevOps.App.Users.Repository;
 using SoftwareEngineeringDevOps.Components;
 
 
@@ -25,6 +26,7 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthorizationCore();
 
 builder.Services.AddSingleton<IUsersDB, UsersDB>();
+builder.Services.AddSingleton<IUsersRepository, UsersRepository>();
 builder.Services.AddSingleton<IUsersMediator, UsersMediator>();
 
 builder.Services.AddSingleton<IManufacturersDB, ManufacturersDB>();
