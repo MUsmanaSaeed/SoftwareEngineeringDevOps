@@ -2,12 +2,16 @@ using Microsoft.AspNetCore.Components.Authorization;
 using SoftwareEngineeringDevOps.App.Auth;
 using SoftwareEngineeringDevOps.App.BrickOrders;
 using SoftwareEngineeringDevOps.App.BrickOrders.Persistence;
+using SoftwareEngineeringDevOps.App.BrickOrders.Repository;
 using SoftwareEngineeringDevOps.App.BrickOrdersReceived;
 using SoftwareEngineeringDevOps.App.BrickOrdersReceived.Persistence;
+using SoftwareEngineeringDevOps.App.BrickOrdersReceived.Repository;
 using SoftwareEngineeringDevOps.App.Bricks;
 using SoftwareEngineeringDevOps.App.Bricks.Persistence;
+using SoftwareEngineeringDevOps.App.Bricks.Repository;
 using SoftwareEngineeringDevOps.App.Manufacturers;
 using SoftwareEngineeringDevOps.App.Manufacturers.Persistence;
+using SoftwareEngineeringDevOps.App.Manufacturers.Repository;
 using SoftwareEngineeringDevOps.App.Users;
 using SoftwareEngineeringDevOps.App.Users.Persistence;
 using SoftwareEngineeringDevOps.App.Users.Repository;
@@ -30,15 +34,19 @@ builder.Services.AddSingleton<IUsersRepository, UsersRepository>();
 builder.Services.AddSingleton<IUsersMediator, UsersMediator>();
 
 builder.Services.AddSingleton<IManufacturersDB, ManufacturersDB>();
+builder.Services.AddSingleton<IManufacturersRepository, ManufacturersRepository>();
 builder.Services.AddSingleton<IManufacturersMediator, ManufacturersMediator>();
 
 builder.Services.AddSingleton<IBricksDB, BricksDB>();
+builder.Services.AddSingleton<IBricksRepository, BricksRepository>();
 builder.Services.AddSingleton<IBricksMediator, BricksMediator>();
 
 builder.Services.AddSingleton<IBrickOrdersDB, BrickOrdersDB>();
+builder.Services.AddSingleton<IBrickOrdersRepository, BrickOrdersRepository>();
 builder.Services.AddSingleton<IBrickOrdersMediator, BrickOrdersMediator>();
 
 builder.Services.AddSingleton<IBrickOrdersReceivedDB, BrickOrdersReceivedDB>();
+builder.Services.AddSingleton<IBrickOrdersReceivedRepository, BrickOrdersReceivedRepository>();
 builder.Services.AddSingleton<IBrickOrdersReceivedMediator, BrickOrdersReceivedMediator>();
 
 // Authentication - scoped per circuit and persisted in protected browser storage

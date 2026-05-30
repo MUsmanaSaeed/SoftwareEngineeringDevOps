@@ -11,7 +11,7 @@ namespace SoftwareEngineeringDevOps.App.Users.Repository
     public class UsersRepository : IUsersRepository
     {
         IUsersDB Db { get; }
-        private readonly Dictionary<long, IUser> _cacheById = [];
+        readonly Dictionary<long, IUser> _cacheById = [];
 
         public UsersRepository(IUsersDB db)
         {
@@ -20,7 +20,7 @@ namespace SoftwareEngineeringDevOps.App.Users.Repository
 
         public IEnumerable<IUser> ListAll()
         {
-            List<User> users = Db.ListAll().Select(User.FromDBO).ToList();
+            IEnumerable<User> users = Db.ListAll().Select(User.FromDBO).ToList();
             foreach (User user in users)
             {
                 _cacheById[user.Id] = user;

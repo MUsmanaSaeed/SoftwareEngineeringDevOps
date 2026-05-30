@@ -1,47 +1,44 @@
-using SoftwareEngineeringDevOps.App.Manufacturers.Persistence;
+using SoftwareEngineeringDevOps.App.Manufacturers.Repository;
 
 namespace SoftwareEngineeringDevOps.App.Manufacturers
 {
     public class ManufacturersMediator : IManufacturersMediator
     {
-        IManufacturersDB Db { get; }
+        IManufacturersRepository Repository { get; }
 
-        public ManufacturersMediator(IManufacturersDB db)
+        public ManufacturersMediator(IManufacturersRepository repository)
         {
-            Db = db;
+            Repository = repository;
         }
 
         public async Task<IEnumerable<IManufacturer>> GetAllManufacturers()
         {
             await Task.CompletedTask;
-            return Db.ListAll().Select(Manufacturer.FromDBO);
+            return Repository.ListAll();
         }
 
         public async Task<IManufacturer?> GetManufacturerById(long id)
         {
             await Task.CompletedTask;
-            var dbo = Db.GetById(id);
-            return dbo == null ? null : Manufacturer.FromDBO(dbo);
+            return Repository.GetById(id);
         }
 
         public async Task<IManufacturer> Insert(NewManufacturer manufacturer)
         {
             await Task.CompletedTask;
-            var dbo = Db.Insert(manufacturer);
-            return Manufacturer.FromDBO(dbo);
+            return Repository.Insert(manufacturer);
         }
 
         public async Task<IManufacturer> Update(EditManufacturer manufacturer)
         {
             await Task.CompletedTask;
-            var dbo = Db.Update(manufacturer);
-            return Manufacturer.FromDBO(dbo);
+            return Repository.Update(manufacturer);
         }
 
         public async Task Delete(long id)
         {
             await Task.CompletedTask;
-            Db.Delete(id);
+            Repository.Delete(id);
         }
     }
 }
