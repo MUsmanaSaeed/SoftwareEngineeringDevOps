@@ -70,24 +70,53 @@
     .order-line-card-interactive:has(.order-line-actions .btn:hover),
     .order-line-card-interactive:has(.order-line-actions .btn:active),
     .order-line-card-interactive:has(.row-actions .btn:hover),
-    .order-line-card-interactive:has(.row-actions .btn:active) {
+    .order-line-card-interactive:has(.row-actions .btn:active),
+    .order-line-card-interactive:has(.received-section-wrapper:hover),
+    .order-line-card-interactive:has(.received-section-wrapper:active) {
         transform: none;
+    }
+
+    .order-line-card-interactive:has(.received-section-wrapper:hover),
+    .order-line-card-interactive:has(.received-section-wrapper:active) {
+        border-color: var(--border-color);
+        box-shadow: var(--shadow);
+        background: var(--bg-primary);
     }
 
 .order-line-card-due-today.order-line-card-interactive:hover {
     background: color-mix(in srgb, var(--accent-primary) 14%, var(--bg-primary));
 }
 
+.order-line-card-due-today.order-line-card-interactive:has(.received-section-wrapper:hover),
+.order-line-card-due-today.order-line-card-interactive:has(.received-section-wrapper:active) {
+    background: color-mix(in srgb, var(--accent-primary) 8%, var(--bg-primary));
+}
+
 .order-line-card-overdue.order-line-card-interactive:hover {
     background: color-mix(in srgb, var(--color-delete) 14%, var(--bg-primary));
+}
+
+.order-line-card-overdue.order-line-card-interactive:has(.received-section-wrapper:hover),
+.order-line-card-overdue.order-line-card-interactive:has(.received-section-wrapper:active) {
+    background: color-mix(in srgb, var(--color-delete) 8%, var(--bg-primary));
 }
 
 .order-line-card-fulfilled.order-line-card-interactive:hover {
     background: color-mix(in srgb, var(--color-add) 14%, var(--bg-primary));
 }
 
+.order-line-card-fulfilled.order-line-card-interactive:has(.received-section-wrapper:hover),
+.order-line-card-fulfilled.order-line-card-interactive:has(.received-section-wrapper:active) {
+    background: color-mix(in srgb, var(--color-add) 8%, var(--bg-primary));
+}
+
 .order-line-card-cancelled.order-line-card-interactive:hover {
     background: color-mix(in srgb, var(--color-delete) 10%, var(--bg-primary));
+}
+
+.order-line-card-cancelled.order-line-card-interactive:has(.received-section-wrapper:hover),
+.order-line-card-cancelled.order-line-card-interactive:has(.received-section-wrapper:active) {
+    background: color-mix(in srgb, var(--color-delete) 6%, var(--bg-primary));
 }
 
 .order-line-card-expanded {
@@ -149,6 +178,7 @@
     display: grid;
     grid-template-rows: 0fr;
     transition: grid-template-rows 0.22s ease;
+    cursor: default;
 }
 
 .received-section-wrapper-expanded {
@@ -160,6 +190,7 @@
     overflow: hidden;
     padding: 0.5rem 1rem 1rem;
     animation: order-line-expand 0.2s ease;
+    cursor: default;
 }
 
 .progress-bar-track {
