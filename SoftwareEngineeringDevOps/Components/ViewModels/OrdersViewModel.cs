@@ -35,7 +35,6 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         private List<IGrouping<string, IBrickOrder>> _orderGroups = new();
         private List<IBrickOrder> _selectedOrderLines = new();
         private UserRole _currentUserRole;
-        private DateTime _today;
 
         // Cached aggregates for selected order (invalidated when selection changes)
         private List<IBrickOrder>? _sortedSelectedOrderLines;
@@ -119,7 +118,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             _selectedOrderTotalOrdered ??= _selectedOrderLines.Sum(line => line.BricksOrdered);
 
         public int SelectedOrderTotalReceived =>
-            _selectedOrderTotalReceived ??= _selectedOrderLines.Sum(GetTotalReceived);
+            _selectedOrderTotalReceived ??= _selectedOrderLines.Sum(line => Math.Min(line.BricksOrdered, GetTotalReceived(line)));
 
         public decimal SelectedOrderFulfillmentPercentage
         {
@@ -135,13 +134,16 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         }
 
         public long CurrentUserId => _authService.CurrentUser?.Id ?? 0;
-        public DateTime Today => _today;
-        public string TodayInputValue => _today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        public DateTime Today => DateTime.Now.ToUkTime();
+        public DateTime TodayDate => Today.Date;
+        public string TodayInputValue => Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+        public string? EditOrderMinExpectedDateInputValue =>
+            EditOrderModel?.OrderedDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
         public async Task LoadOrders()
         {
             IsLoading = true;
-            _today = DateTime.Today;
             _currentUserRole = _authService.CurrentUser != null
                 ? RoleHelper.GetRole(_authService.CurrentUser)
                 : UserRole.Standard;
@@ -265,7 +267,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
 
             return orderLine.CancelledDate == null
                 && !IsOrderFullyReceived(orderLine)
-                && orderLine.ExpectedDate.Date == Today;
+                && orderLine.ExpectedDate.Date == TodayDate;
         }
 
         public bool IsOrderOverdue(IBrickOrder orderLine)
@@ -274,7 +276,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
 
             return orderLine.CancelledDate == null
                 && !IsOrderFullyReceived(orderLine)
-                && orderLine.ExpectedDate.Date < Today;
+                && orderLine.ExpectedDate.Date < TodayDate;
         }
 
         public bool CanToggleCancellation(IBrickOrder orderLine) =>
@@ -461,7 +463,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
 
             ValidationErrors.Clear();
             var errors = InputValidator.ValidateBrickOrder(EditOrderModel);
-            errors.AddRange(ValidateOrderDates(EditOrderModel.OrderedDate, EditOrderModel.ExpectedDate));
+            errors.AddRange(ValidateOrderDates(EditOrderModel.OrderedDate, EditOrderModel.ExpectedDate, EditOrderModel.OrderedDate));
             if (errors.Count > 0)
             {
                 ValidationErrors = errors;
@@ -621,18 +623,21 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             return true;
         }
 
-        private List<string> ValidateOrderDates(DateTime orderedDate, DateTime expectedDate)
+        private List<string> ValidateOrderDates(DateTime orderedDate, DateTime expectedDate, DateTime? minExpectedDate = null)
         {
             var errors = new List<string>();
 
-            if (orderedDate.Date > Today)
+            if (orderedDate.Date > TodayDate)
             {
                 errors.Add("Order date cannot be greater than today.");
             }
 
-            if (expectedDate.Date < Today)
+            var effectiveMin = (minExpectedDate ?? Today).Date;
+            if (expectedDate.Date < effectiveMin)
             {
-                errors.Add("Expected date cannot be less than today.");
+                errors.Add(effectiveMin == TodayDate
+                    ? "Expected date cannot be less than today."
+                    : "Expected date cannot be before the order date.");
             }
 
             return errors;
