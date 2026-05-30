@@ -1,3 +1,4 @@
+using System.Globalization;
 using SoftwareEngineeringDevOps.App.Auth;
 using SoftwareEngineeringDevOps.App.Bricks;
 using SoftwareEngineeringDevOps.App.BrickOrders;
@@ -67,10 +68,15 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase);
 
         public IEnumerable<IBrickOrder> SortedSelectedOrderLines =>
-            SelectedOrderLines.OrderBy(l => l.CancelledDate != null ? DateTime.MaxValue : l.ExpectedDate)
-                .ThenByDescending(l => l.ExpectedDate);
+            SelectedOrderLines
+                .OrderBy(GetOrderLineSortBucket)
+                .ThenByDescending(GetOrderLineSortDate)
+                .ThenByDescending(l => l.OrderedDate)
+                .ThenBy(l => l.Id);
 
         public long CurrentUserId => _authService.CurrentUser?.Id ?? 0;
+        public DateTime Today => DateTime.Today;
+        public string TodayInputValue => Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
         public async Task LoadOrders()
         {
@@ -108,15 +114,31 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
 
         public decimal GetFulfillmentPercentage(IBrickOrder orderLine)
         {
-            if (orderLine.BricksOrdered <= 0) return 0;
-            if (!ReceivedByOrderLine.TryGetValue(orderLine.Id, out var received)) return 0;
-            var totalReceived = received.Sum(r => r.BricksReceived);
+            ArgumentNullException.ThrowIfNull(orderLine);
+
+            if (orderLine.BricksOrdered <= 0)
+            {
+                return 0;
+            }
+
+            var totalReceived = GetTotalReceived(orderLine);
+            if (totalReceived <= 0)
+            {
+                return 0;
+            }
+
             return Math.Min(100, Math.Round((decimal)totalReceived / orderLine.BricksOrdered * 100, 1));
         }
 
         public int GetTotalReceived(IBrickOrder orderLine)
         {
-            if (!ReceivedByOrderLine.TryGetValue(orderLine.Id, out var received)) return 0;
+            ArgumentNullException.ThrowIfNull(orderLine);
+
+            if (!ReceivedByOrderLine.TryGetValue(orderLine.Id, out var received))
+            {
+                return 0;
+            }
+
             return received.Sum(r => r.BricksReceived);
         }
 
@@ -126,8 +148,122 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             return received.Any();
         }
 
+        public bool IsOrderFullyReceived(IBrickOrder orderLine)
+        {
+            ArgumentNullException.ThrowIfNull(orderLine);
+
+            return orderLine.BricksOrdered > 0 && GetTotalReceived(orderLine) >= orderLine.BricksOrdered;
+        }
+
+        public bool IsOrderDueToday(IBrickOrder orderLine)
+        {
+            ArgumentNullException.ThrowIfNull(orderLine);
+
+            return orderLine.CancelledDate == null
+                && !IsOrderFullyReceived(orderLine)
+                && orderLine.ExpectedDate.Date == Today;
+        }
+
+        public bool IsOrderOverdue(IBrickOrder orderLine)
+        {
+            ArgumentNullException.ThrowIfNull(orderLine);
+
+            return orderLine.CancelledDate == null
+                && !IsOrderFullyReceived(orderLine)
+                && orderLine.ExpectedDate.Date < Today;
+        }
+
         public bool CanToggleCancellation(IBrickOrder orderLine) =>
             RoleHelper.CanEdit(CurrentUserRole) && !HasReceivedItems(orderLine.Id);
+
+        public string GetOrderLineStateClass(IBrickOrder orderLine)
+        {
+            ArgumentNullException.ThrowIfNull(orderLine);
+
+            if (orderLine.CancelledDate != null)
+            {
+                return "order-line-card-cancelled";
+            }
+
+            if (IsOrderDueToday(orderLine))
+            {
+                return "order-line-card-due-today";
+            }
+
+            if (IsOrderOverdue(orderLine))
+            {
+                return "order-line-card-overdue";
+            }
+
+            if (IsOrderFullyReceived(orderLine))
+            {
+                return "order-line-card-fulfilled";
+            }
+
+            return string.Empty;
+        }
+
+        public string? GetOrderLineStatusText(IBrickOrder orderLine)
+        {
+            ArgumentNullException.ThrowIfNull(orderLine);
+
+            if (orderLine.CancelledDate != null)
+            {
+                return "Cancelled";
+            }
+
+            if (IsOrderDueToday(orderLine))
+            {
+                return "Due today";
+            }
+
+            if (IsOrderOverdue(orderLine))
+            {
+                return "Overdue";
+            }
+
+            if (IsOrderFullyReceived(orderLine))
+            {
+                return "Fully received";
+            }
+
+            return null;
+        }
+
+        private int GetOrderLineSortBucket(IBrickOrder orderLine)
+        {
+            ArgumentNullException.ThrowIfNull(orderLine);
+
+            if (orderLine.CancelledDate != null)
+            {
+                return 4;
+            }
+
+            if (IsOrderDueToday(orderLine))
+            {
+                return 0;
+            }
+
+            if (IsOrderOverdue(orderLine))
+            {
+                return 1;
+            }
+
+            if (IsOrderFullyReceived(orderLine))
+            {
+                return 3;
+            }
+
+            return 2;
+        }
+
+        private DateTime GetOrderLineSortDate(IBrickOrder orderLine)
+        {
+            ArgumentNullException.ThrowIfNull(orderLine);
+
+            return orderLine.CancelledDate?.Date
+                ?? orderLine.ExpectedDate.Date;
+        }
 
         public async Task<bool> ToggleOrderCancellation(IBrickOrder orderLine)
         {
@@ -159,10 +295,16 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         // Order CRUD
         public void OpenAddOrderModal()
         {
+            OpenAddOrderModal(null);
+        }
+
+        public void OpenAddOrderModal(string? orderNo)
+        {
             NewOrderModel = new NewBrickOrder
             {
-                OrderedDate = DateTime.UtcNow,
-                ExpectedDate = DateTime.UtcNow.AddDays(14),
+                OrderNo = orderNo ?? string.Empty,
+                OrderedDate = Today,
+                ExpectedDate = Today.AddDays(14),
                 CreatedById = CurrentUserId
             };
             ValidationErrors.Clear();
@@ -180,6 +322,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             ValidationErrors.Clear();
             NewOrderModel.CreatedById = CurrentUserId;
             var errors = InputValidator.ValidateBrickOrder(NewOrderModel);
+            errors.AddRange(ValidateOrderDates(NewOrderModel.OrderedDate, NewOrderModel.ExpectedDate));
             if (errors.Count > 0)
             {
                 ValidationErrors = errors;
@@ -214,6 +357,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
 
             ValidationErrors.Clear();
             var errors = InputValidator.ValidateBrickOrder(EditOrderModel);
+            errors.AddRange(ValidateOrderDates(EditOrderModel.OrderedDate, EditOrderModel.ExpectedDate));
             if (errors.Count > 0)
             {
                 ValidationErrors = errors;
@@ -362,6 +506,23 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             return true;
         }
 
-        public string FormatPrice(decimal price) => price.ToString("C2", System.Globalization.CultureInfo.GetCultureInfo("en-GB"));
+        private List<string> ValidateOrderDates(DateTime orderedDate, DateTime expectedDate)
+        {
+            var errors = new List<string>();
+
+            if (orderedDate.Date > Today)
+            {
+                errors.Add("Order date cannot be greater than today.");
+            }
+
+            if (expectedDate.Date < Today)
+            {
+                errors.Add("Expected date cannot be less than today.");
+            }
+
+            return errors;
+        }
+
+        public string FormatPrice(decimal price) => price.ToString("C2", CultureInfo.GetCultureInfo("en-GB"));
     }
 }

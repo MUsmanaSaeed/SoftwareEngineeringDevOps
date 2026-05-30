@@ -1006,7 +1006,7 @@ html[data-theme="light"] .logo-light {
 .order-lines {
     overflow-y: auto;
     flex: 1;
-    padding: 0 0rem 1.5rem;
+    padding: 0.1rem 0rem 1.5rem;
 }
 
 .order-line-card {
@@ -1030,9 +1030,8 @@ html[data-theme="light"] .logo-light {
 }
 
 .progress-bar-container {
-    background: var(--progress-bg);
     height: 24px;
-    margin: 0 1rem 0.75rem;
+    margin: 0 0rem 1rem;
     border-radius: 4px;
     overflow: hidden;
     position: relative;
