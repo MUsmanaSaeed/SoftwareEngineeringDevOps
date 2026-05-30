@@ -10,7 +10,7 @@ namespace SoftwareEngineeringDevOps.App.Validation
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         static readonly Regex PhoneRegex = new(
-            @"^[\+]?[\d\s\-\(\)]{7,20}$",
+            @"^\+?\d{7,20}$",
             RegexOptions.Compiled);
 
         public static ValidationResult ValidateNonEmpty(string? value, string fieldName)
@@ -231,8 +231,7 @@ namespace SoftwareEngineeringDevOps.App.Validation
         {
             var errors = new List<string>();
             AddIfInvalid(errors, ValidateNonEmpty(m.Name, "Name"));
-            AddIfInvalid(errors, ValidateNonEmpty(m.Address1, "Address1"));
-            AddIfInvalid(errors, ValidateNonEmpty(m.Postcode, "Postcode"));
+            AddIfInvalid(errors, ValidateNonEmpty(m.Address1, "Address Line 1"));
             AddIfInvalid(errors, ValidatePhone(m.PhoneNo, "Phone Number"));
             AddIfInvalid(errors, ValidateEmail(m.Email, "Email"));
             return errors;
@@ -242,8 +241,7 @@ namespace SoftwareEngineeringDevOps.App.Validation
         {
             var errors = new List<string>();
             AddIfInvalid(errors, ValidateNonEmpty(m.Name, "Name"));
-            AddIfInvalid(errors, ValidateNonEmpty(m.Address1, "Address1"));
-            AddIfInvalid(errors, ValidateNonEmpty(m.Postcode, "Postcode"));
+            AddIfInvalid(errors, ValidateNonEmpty(m.Address1, "Address Line 1"));
             AddIfInvalid(errors, ValidatePhone(m.PhoneNo, "Phone Number"));
             AddIfInvalid(errors, ValidateEmail(m.Email, "Email"));
             return errors;

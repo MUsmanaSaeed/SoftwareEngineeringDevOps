@@ -201,5 +201,15 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         }
 
         public string FormatPrice(decimal price) => price.ToString("C2", System.Globalization.CultureInfo.GetCultureInfo("en-GB"));
+
+        public string FormatVoidsPercent(decimal voids) => $"{(voids * 100m):0.##}%";
+
+        public string VoidsPercentInputValue(decimal voids) => (voids * 100m).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+
+        public static decimal ParseVoidsPercentInput(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return 0m;
+            return decimal.TryParse(value, out var percent) ? percent / 100m : 0m;
+        }
     }
 }

@@ -580,6 +580,10 @@ html[data-theme="light"] .logo-light {
     font-size: 0.9rem;
 }
 
+.text-muted {
+    color: var(--text-muted) !important;
+}
+
 /* ============================================
    Buttons
    ============================================ */
