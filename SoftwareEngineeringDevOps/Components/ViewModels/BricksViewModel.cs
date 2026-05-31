@@ -155,8 +155,9 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             }
 
             IsLoading = true;
-            await _bricksMediator.Insert(NewBrickModel);
+            var createdBrick = await _bricksMediator.Insert(NewBrickModel);
             await LoadBricks();
+            await SelectBrickById(createdBrick.Id);
             ShowAddModal = false;
             IsLoading = false;
             return true;
@@ -210,14 +211,10 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             }
 
             IsLoading = true;
-            await _bricksMediator.Update(EditBrickModel);
+            var updatedBrick = await _bricksMediator.Update(EditBrickModel);
             await LoadBricks();
+            await SelectBrickById(updatedBrick.Id);
             ShowEditModal = false;
-
-            if (SelectedBrick?.Id == EditBrickModel.Id)
-            {
-                SelectedBrick = await _bricksMediator.GetBrickById(EditBrickModel.Id);
-            }
             IsLoading = false;
             return true;
         }

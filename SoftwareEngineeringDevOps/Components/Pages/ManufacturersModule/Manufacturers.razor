@@ -328,7 +328,10 @@
         if (success)
         {
             ToastService.Show($"Manufacturer '{name}' created successfully.");
-            Navigation.NavigateTo("/manufacturers", forceLoad: false, replace: true);
+            if (ViewModel.SelectedManufacturer != null)
+            {
+                Navigation.NavigateTo($"/manufacturers/{ViewModel.SelectedManufacturer.Id}", forceLoad: false, replace: true);
+            }
         }
         else
         {
@@ -343,7 +346,10 @@
         if (success)
         {
             ToastService.Show($"Manufacturer '{name}' updated successfully.");
-            Navigation.NavigateTo("/manufacturers", forceLoad: false, replace: true);
+            if (ViewModel.SelectedManufacturer != null)
+            {
+                Navigation.NavigateTo($"/manufacturers/{ViewModel.SelectedManufacturer.Id}", forceLoad: false, replace: true);
+            }
         }
         else
         {

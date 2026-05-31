@@ -110,8 +110,9 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             }
 
             IsLoading = true;
-            await _manufacturersMediator.Insert(NewManufacturerModel);
+            var createdManufacturer = await _manufacturersMediator.Insert(NewManufacturerModel);
             await LoadManufacturers();
+            await SelectManufacturer(createdManufacturer);
             ShowAddModal = false;
             IsLoading = false;
             return true;
@@ -153,14 +154,10 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             }
 
             IsLoading = true;
-            await _manufacturersMediator.Update(EditManufacturerModel);
+            var updatedManufacturer = await _manufacturersMediator.Update(EditManufacturerModel);
             await LoadManufacturers();
+            await SelectManufacturer(updatedManufacturer);
             ShowEditModal = false;
-
-            if (SelectedManufacturer?.Id == EditManufacturerModel.Id)
-            {
-                SelectedManufacturer = await _manufacturersMediator.GetManufacturerById(EditManufacturerModel.Id);
-            }
             IsLoading = false;
             return true;
         }

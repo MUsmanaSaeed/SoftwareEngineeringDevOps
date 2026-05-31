@@ -489,7 +489,13 @@
     {
         var success = await ViewModel.AddOrder();
         if (success)
+        {
             ToastService.Show($"Order line added to order '{ViewModel.SelectedOrderNo}'.");
+            if (!string.IsNullOrWhiteSpace(ViewModel.SelectedOrderNo))
+            {
+                Navigation.NavigateTo($"/orders/{ViewModel.SelectedOrderNo}", forceLoad: false, replace: true);
+            }
+        }
         else
             ToastService.Show("Failed to add order line. Please check the form.", ToastSeverity.Error);
     }
@@ -518,7 +524,13 @@
     {
         var success = await ViewModel.UpdateOrder();
         if (success)
+        {
             ToastService.Show("Order line updated successfully.");
+            if (!string.IsNullOrWhiteSpace(ViewModel.SelectedOrderNo))
+            {
+                Navigation.NavigateTo($"/orders/{ViewModel.SelectedOrderNo}", forceLoad: false, replace: true);
+            }
+        }
         else
             ToastService.Show("Failed to update order line. Please check the form.", ToastSeverity.Error);
     }

@@ -382,7 +382,10 @@
         if (success)
         {
             ToastService.Show($"Brick '{name}' created successfully.");
-            Navigation.NavigateTo("/bricks", forceLoad: false, replace: true);
+            if (ViewModel.SelectedBrick != null)
+            {
+                Navigation.NavigateTo($"/bricks/{ViewModel.SelectedBrick.Id}", forceLoad: false, replace: true);
+            }
         }
         else
         {
@@ -397,7 +400,10 @@
         if (success)
         {
             ToastService.Show($"Brick '{name}' updated successfully.");
-            Navigation.NavigateTo("/bricks", forceLoad: false, replace: true);
+            if (ViewModel.SelectedBrick != null)
+            {
+                Navigation.NavigateTo($"/bricks/{ViewModel.SelectedBrick.Id}", forceLoad: false, replace: true);
+            }
         }
         else
         {

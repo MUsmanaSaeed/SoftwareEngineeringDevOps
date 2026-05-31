@@ -187,10 +187,27 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         /// </summary>
         public void ApplyOrderGroupSelection(string orderNo)
         {
+            var previousSelectedOrderNo = SelectedOrderNo;
+            var previouslyExpandedLineIds = ExpandedRows
+                .Where(kvp => kvp.Value)
+                .Select(kvp => kvp.Key)
+                .ToHashSet();
+
             SelectedOrderNo = orderNo;
             _selectedOrderLines = _allOrders.Where(o => o.OrderNo == orderNo).ToList();
             ReceivedByOrderLine.Clear();
-            ExpandedRows.Clear();
+
+            if (string.Equals(previousSelectedOrderNo, orderNo, StringComparison.Ordinal))
+            {
+                ExpandedRows = _selectedOrderLines
+                    .Where(line => previouslyExpandedLineIds.Contains(line.Id))
+                    .ToDictionary(line => line.Id, _ => true);
+            }
+            else
+            {
+                ExpandedRows.Clear();
+            }
+
             InvalidateSelectionCache();
         }
 
@@ -468,9 +485,9 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             }
 
             IsLoading = true;
-            await _ordersMediator.Insert(NewOrderModel);
+            var createdOrder = await _ordersMediator.Insert(NewOrderModel);
             await LoadOrders();
-            if (SelectedOrderNo != null) await SelectOrderGroup(SelectedOrderNo);
+            await SelectOrderGroup(createdOrder.OrderNo);
             ShowAddOrderModal = false;
             IsLoading = false;
             return true;
@@ -516,9 +533,9 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             }
 
             IsLoading = true;
-            await _ordersMediator.Update(EditOrderModel);
+            var updatedOrder = await _ordersMediator.Update(EditOrderModel);
             await LoadOrders();
-            if (SelectedOrderNo != null) await SelectOrderGroup(SelectedOrderNo);
+            await SelectOrderGroup(updatedOrder.OrderNo);
             ShowEditOrderModal = false;
             IsLoading = false;
             return true;
@@ -633,10 +650,21 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
                 return false;
             }
 
+            var updatedOrderLineId = EditReceivedBrickOrderId;
+            var wasExpanded = updatedOrderLineId.HasValue && IsRowExpanded(updatedOrderLineId.Value);
+
             IsLoading = true;
             await _receivedMediator.Update(EditReceivedModel);
             await LoadOrders();
-            if (SelectedOrderNo != null) await SelectOrderGroup(SelectedOrderNo);
+            if (SelectedOrderNo != null)
+            {
+                await SelectOrderGroup(SelectedOrderNo);
+
+                if (wasExpanded && updatedOrderLineId.HasValue)
+                {
+                    ExpandedRows[updatedOrderLineId.Value] = true;
+                }
+            }
             ShowEditReceivedModal = false;
             EditReceivedBrickOrderId = null;
             IsLoading = false;
