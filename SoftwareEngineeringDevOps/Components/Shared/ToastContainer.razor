@@ -1,0 +1,38 @@
+@inject SoftwareEngineeringDevOps.Components.Shared.IToastService ToastService
+@implements IDisposable
+
+<div class="toast-container" aria-live="polite" aria-atomic="false">
+    @foreach (var toast in ToastService.Toasts)
+    {
+        var severityClass = toast.Severity switch
+        {
+            SoftwareEngineeringDevOps.Components.Shared.ToastSeverity.Success => "toast-success",
+            SoftwareEngineeringDevOps.Components.Shared.ToastSeverity.Warning => "toast-warning",
+            SoftwareEngineeringDevOps.Components.Shared.ToastSeverity.Error   => "toast-error",
+            _ => "toast-success"
+        };
+        <div class="app-toast @severityClass" role="alert">
+            <span class="toast-message">@toast.Message</span>
+            <button class="toast-close" aria-label="Dismiss" @onclick="() => ToastService.Dismiss(toast.Id)">
+                <span class="icon">&#xE711;</span>
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        ToastService.OnChange += HandleChange;
+    }
+
+    private void HandleChange()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        ToastService.OnChange -= HandleChange;
+    }
+}

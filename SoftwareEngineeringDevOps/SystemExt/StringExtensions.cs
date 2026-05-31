@@ -20,7 +20,7 @@
                 }
                 else
                 {
-                    chars[i] = char.ToLowerInvariant(chars[i]);
+                    //chars[i] = char.ToLowerInvariant(chars[i]);
                 }
             }
             return new string(chars);

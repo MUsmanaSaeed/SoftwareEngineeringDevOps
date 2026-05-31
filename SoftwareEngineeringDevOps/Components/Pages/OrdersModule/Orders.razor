@@ -1,13 +1,18 @@
 @page "/orders"
 @page "/orders/{QueryOrderNo}"
-@inject SoftwareEngineeringDevOps.App.Auth.IAuthService AuthService
-@inject SoftwareEngineeringDevOps.App.BrickOrders.IBrickOrdersMediator OrdersMediator
-@inject SoftwareEngineeringDevOps.App.BrickOrdersReceived.IBrickOrdersReceivedMediator ReceivedMediator
-@inject SoftwareEngineeringDevOps.App.Bricks.IBricksMediator BricksMediator
+@inject IAuthService AuthService
+@inject IBrickOrdersMediator OrdersMediator
+@inject IBrickOrdersReceivedMediator ReceivedMediator
+@inject IBricksMediator BricksMediator
 @inject NavigationManager Navigation
+@inject IToastService ToastService
 
 @using Microsoft.AspNetCore.Components.Web
 @using SoftwareEngineeringDevOps.App.Auth
+@using SoftwareEngineeringDevOps.App.Bricks
+@using SoftwareEngineeringDevOps.App.BrickOrders
+@using SoftwareEngineeringDevOps.App.BrickOrdersReceived
+@using Components.ViewModels
 
 <PageTitle>Orders</PageTitle>
 
@@ -17,7 +22,7 @@
             <h3>Orders</h3>
             <div class="panel-header-actions">
                 <input class="form-input panel-header-search" placeholder="Search orders..." @bind="ViewModel.OrderGroupsSearchTerm" @bind:event="oninput" />
-                @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanCreate(ViewModel.CurrentUserRole))
+                @if (RoleHelper.CanCreate(ViewModel.CurrentUserRole))
                 {
                     <button class="btn btn-add" @onclick="ViewModel.OpenAddOrderModal">
                         <span class="icon">&#xE710;</span>
@@ -430,7 +435,7 @@
 }
 
 @code {
-    private Components.ViewModels.OrdersViewModel ViewModel { get; set; } = null!;
+    OrdersViewModel ViewModel { get; set; } = null!;
 
     [Parameter]
     public string? QueryOrderNo { get; set; }
@@ -440,7 +445,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        ViewModel = new Components.ViewModels.OrdersViewModel(OrdersMediator, ReceivedMediator, BricksMediator, AuthService);
+        ViewModel = new OrdersViewModel(OrdersMediator, ReceivedMediator, BricksMediator, AuthService);
         await ViewModel.LoadOrders();
 
         if (!string.IsNullOrEmpty(QueryOrderNo))
@@ -454,7 +459,7 @@
         }
     }
 
-    private async Task HandleSelectGroup(string orderNo)
+    async Task HandleSelectGroup(string orderNo)
     {
         // Phase 1: apply selection synchronously so Blazor renders the right panel instantly
         ViewModel.ApplyOrderGroupSelection(orderNo);
@@ -465,7 +470,7 @@
         await ViewModel.LoadSelectedOrderReceivedAsync();
     }
 
-    private void HandleToggleRowExpansion(global::SoftwareEngineeringDevOps.App.BrickOrders.IBrickOrder orderLine)
+    void HandleToggleRowExpansion(IBrickOrder orderLine)
     {
         if (orderLine.CancelledDate != null)
         {
@@ -475,48 +480,56 @@
         ViewModel.ToggleRowExpansion(orderLine.Id);
     }
 
-    private void HandleAddOrderLineForSelectedOrder()
+    void HandleAddOrderLineForSelectedOrder()
     {
         ViewModel.OpenAddOrderModal(ViewModel.SelectedOrderNo);
     }
 
-    private async Task HandleAddOrder()
+    async Task HandleAddOrder()
     {
-        await ViewModel.AddOrder();
+        var success = await ViewModel.AddOrder();
+        if (success)
+            ToastService.Show($"Order line added to order '{ViewModel.SelectedOrderNo}'.");
+        else
+            ToastService.Show("Failed to add order line. Please check the form.", ToastSeverity.Error);
     }
 
-    private Task HandleAddBrickChanged(string value)
+    Task HandleAddBrickChanged(string value)
     {
         ViewModel.SetAddBrickFromText(value);
         return Task.CompletedTask;
     }
 
-    private void HandleAddOrderDateInput(ChangeEventArgs e)
+    void HandleAddOrderDateInput(ChangeEventArgs e)
     {
         if (!DateTime.TryParse(e.Value?.ToString(), out var value)) return;
         ViewModel.NewOrderModel.OrderedDate = value;
         ViewModel.ValidateAddOrderDates();
     }
 
-    private void HandleAddExpectedDateInput(ChangeEventArgs e)
+    void HandleAddExpectedDateInput(ChangeEventArgs e)
     {
         if (!DateTime.TryParse(e.Value?.ToString(), out var value)) return;
         ViewModel.NewOrderModel.ExpectedDate = value;
         ViewModel.ValidateAddOrderDates();
     }
 
-    private async Task HandleUpdateOrder()
+    async Task HandleUpdateOrder()
     {
-        await ViewModel.UpdateOrder();
+        var success = await ViewModel.UpdateOrder();
+        if (success)
+            ToastService.Show("Order line updated successfully.");
+        else
+            ToastService.Show("Failed to update order line. Please check the form.", ToastSeverity.Error);
     }
 
-    private Task HandleEditBrickChanged(string value)
+    Task HandleEditBrickChanged(string value)
     {
         ViewModel.SetEditBrickFromText(value);
         return Task.CompletedTask;
     }
 
-    private void HandleEditOrderDateInput(ChangeEventArgs e)
+    void HandleEditOrderDateInput(ChangeEventArgs e)
     {
         if (ViewModel.EditOrderModel == null) return;
         if (!DateTime.TryParse(e.Value?.ToString(), out var value)) return;
@@ -524,7 +537,7 @@
         ViewModel.ValidateEditOrderDates();
     }
 
-    private void HandleEditExpectedDateInput(ChangeEventArgs e)
+    void HandleEditExpectedDateInput(ChangeEventArgs e)
     {
         if (ViewModel.EditOrderModel == null) return;
         if (!DateTime.TryParse(e.Value?.ToString(), out var value)) return;
@@ -532,28 +545,57 @@
         ViewModel.ValidateEditOrderDates();
     }
 
-    private async Task HandleDeleteOrder()
+    async Task HandleDeleteOrder()
     {
-        await ViewModel.DeleteOrder();
+        var success = await ViewModel.DeleteOrder();
+        if (success)
+            ToastService.Show("Order line deleted.", ToastSeverity.Warning);
+        else
+            ToastService.Show("Failed to delete order line.", ToastSeverity.Error);
     }
 
-    private async Task HandleToggleOrderCancellation(global::SoftwareEngineeringDevOps.App.BrickOrders.IBrickOrder orderLine)
+    async Task HandleToggleOrderCancellation(IBrickOrder orderLine)
     {
-        await ViewModel.ToggleOrderCancellation(orderLine);
+        var wasCancelled = orderLine.CancelledDate != null;
+        var success = await ViewModel.ToggleOrderCancellation(orderLine);
+        if (success)
+        {
+            var msg = wasCancelled ? "Order line reinstated." : "Order line cancelled.";
+            var severity = wasCancelled
+                ? SoftwareEngineeringDevOps.Components.Shared.ToastSeverity.Success
+                : SoftwareEngineeringDevOps.Components.Shared.ToastSeverity.Warning;
+            ToastService.Show(msg, severity);
+        }
+        else
+        {
+            ToastService.Show("Failed to update order cancellation.", ToastSeverity.Error);
+        }
     }
 
-    private async Task HandleAddReceived()
+    async Task HandleAddReceived()
     {
-        await ViewModel.AddReceived();
+        var success = await ViewModel.AddReceived();
+        if (success)
+            ToastService.Show("Received batch added successfully.");
+        else
+            ToastService.Show("Failed to add received batch. Please check the form.", ToastSeverity.Error);
     }
 
-    private async Task HandleUpdateReceived()
+    async Task HandleUpdateReceived()
     {
-        await ViewModel.UpdateReceived();
+        var success = await ViewModel.UpdateReceived();
+        if (success)
+            ToastService.Show("Received batch updated successfully.");
+        else
+            ToastService.Show("Failed to update received batch. Please check the form.", ToastSeverity.Error);
     }
 
-    private async Task HandleDeleteReceived()
+    async Task HandleDeleteReceived()
     {
-        await ViewModel.DeleteReceived();
+        var success = await ViewModel.DeleteReceived();
+        if (success)
+            ToastService.Show("Received batch deleted.", ToastSeverity.Warning);
+        else
+            ToastService.Show("Failed to delete received batch.", ToastSeverity.Error);
     }
 }

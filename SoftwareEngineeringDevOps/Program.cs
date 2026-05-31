@@ -16,6 +16,7 @@ using SoftwareEngineeringDevOps.App.Users;
 using SoftwareEngineeringDevOps.App.Users.Persistence;
 using SoftwareEngineeringDevOps.App.Users.Repository;
 using SoftwareEngineeringDevOps.Components;
+using SoftwareEngineeringDevOps.Components.Shared;
 
 
 AppContext.SetSwitch("Npgsql.EnableStoredProcedureCompatMode", true);
@@ -53,6 +54,8 @@ builder.Services.AddSingleton<IBrickOrdersReceivedMediator, BrickOrdersReceivedM
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<IAuthService>(sp => sp.GetRequiredService<AuthService>());
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<AuthService>());
+
+builder.Services.AddScoped<IToastService, ToastService>();
 
 var app = builder.Build();
 

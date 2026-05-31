@@ -1,14 +1,19 @@
 @page "/bricks"
 @page "/bricks/{SelectedId:long}"
-@inject SoftwareEngineeringDevOps.App.Auth.IAuthService AuthService
-@inject SoftwareEngineeringDevOps.App.Bricks.IBricksMediator BricksMediator
-@inject SoftwareEngineeringDevOps.App.Manufacturers.IManufacturersMediator ManufacturersMediator
-@inject SoftwareEngineeringDevOps.App.BrickOrders.IBrickOrdersMediator OrdersMediator
+@inject IAuthService AuthService
+@inject IBricksMediator BricksMediator
+@inject IManufacturersMediator ManufacturersMediator
+@inject IBrickOrdersMediator OrdersMediator
 @inject NavigationManager Navigation
+@inject IToastService ToastService
+
+@using SoftwareEngineeringDevOps.App.BrickOrders
+@using SoftwareEngineeringDevOps.App.Bricks
+@using SoftwareEngineeringDevOps.App.Manufacturers
+@using SoftwareEngineeringDevOps.App.Auth
+@using Components.ViewModels
 
 <PageTitle>Bricks</PageTitle>
-
-@using Components.ViewModels;
 
 <div class="split-layout">
     <div class="split-left">
@@ -63,13 +68,13 @@
                 <div class="detail-header">
                     <h3>@ViewModel.SelectedBrick.Name</h3>
                     <div class="detail-actions">
-                        @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanEdit(ViewModel.CurrentUserRole))
+                        @if (RoleHelper.CanEdit(ViewModel.CurrentUserRole))
                         {
                             <button class="btn btn-edit" @onclick="() => ViewModel.OpenEditModal(ViewModel.SelectedBrick)">
                                 <span class="icon">&#xE70F;</span>
                             </button>
                         }
-                        @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanDelete(ViewModel.CurrentUserRole))
+                        @if (RoleHelper.CanDelete(ViewModel.CurrentUserRole))
                         {
                             <button class="btn btn-delete" @onclick="() => HandleOpenDelete(ViewModel.SelectedBrick)">
                                 <span class="icon">&#xE74D;</span>
@@ -334,7 +339,7 @@
 }
 
 @code {
-    private BricksViewModel ViewModel { get; set; } = null!;
+    BricksViewModel ViewModel { get; set; } = null!;
 
     [SupplyParameterFromQuery(Name = "action")]
     public string? Action { get; set; }
@@ -359,169 +364,196 @@
         }
     }
 
-    private async Task HandleSelect(global::SoftwareEngineeringDevOps.App.Bricks.IBrick brick)
+    async Task HandleSelect(IBrick brick)
     {
         await ViewModel.SelectBrick(brick);
         Navigation.NavigateTo($"/bricks/{brick.Id}", forceLoad: false, replace: true);
     }
 
-    private async Task HandleOpenDelete(global::SoftwareEngineeringDevOps.App.Bricks.IBrick brick)
+    async Task HandleOpenDelete(IBrick brick)
     {
         await ViewModel.OpenDeleteConfirm(brick);
     }
 
-    private async Task HandleAdd()
+    async Task HandleAdd()
     {
+        var name = ViewModel.NewBrickModel.Name;
         var success = await ViewModel.AddBrick();
-        if (success) Navigation.NavigateTo("/bricks", forceLoad: false, replace: true);
+        if (success)
+        {
+            ToastService.Show($"Brick '{name}' created successfully.");
+            Navigation.NavigateTo("/bricks", forceLoad: false, replace: true);
+        }
+        else
+        {
+            ToastService.Show("Failed to add brick. Please check the form.", ToastSeverity.Error);
+        }
     }
 
-    private async Task HandleUpdate()
+    async Task HandleUpdate()
     {
+        var name = ViewModel.EditBrickModel?.Name;
         var success = await ViewModel.UpdateBrick();
-        if (success) Navigation.NavigateTo("/bricks", forceLoad: false, replace: true);
+        if (success)
+        {
+            ToastService.Show($"Brick '{name}' updated successfully.");
+            Navigation.NavigateTo("/bricks", forceLoad: false, replace: true);
+        }
+        else
+        {
+            ToastService.Show("Failed to update brick. Please check the form.", ToastSeverity.Error);
+        }
     }
 
-    private async Task HandleDelete()
+    async Task HandleDelete()
     {
+        var name = ViewModel.SelectedBrick?.Name;
         var success = await ViewModel.DeleteBrick();
-        if (success) Navigation.NavigateTo("/bricks", forceLoad: false, replace: true);
+        if (success)
+        {
+            ToastService.Show($"Brick '{name}' deleted.", ToastSeverity.Warning);
+            Navigation.NavigateTo("/bricks", forceLoad: false, replace: true);
+        }
+        else
+        {
+            ToastService.Show("Failed to delete brick.", ToastSeverity.Error);
+        }
     }
 
-    private void HandleOrderClick(string orderNo)
+    void HandleOrderClick(string orderNo)
     {
         Navigation.NavigateTo($"/orders/{orderNo}");
     }
 
-    private void HandleAddNameInput(ChangeEventArgs e)
+    void HandleAddNameInput(ChangeEventArgs e)
     {
         ViewModel.NewBrickModel.Name = e.Value?.ToString().ToTitleCase() ?? string.Empty;
         ViewModel.ValidateAddBrickName();
     }
 
-    private void HandleAddColourInput(ChangeEventArgs e)
+    void HandleAddColourInput(ChangeEventArgs e)
     {
         ViewModel.NewBrickModel.Colour = e.Value?.ToString().ToTitleCase() ?? string.Empty;
     }
 
-    private void HandleAddMaterialInput(ChangeEventArgs e)
+    void HandleAddMaterialInput(ChangeEventArgs e)
     {
         ViewModel.NewBrickModel.Material = e.Value?.ToString().ToTitleCase() ?? string.Empty;
     }
 
-    private void HandleAddTypeInput(ChangeEventArgs e)
+    void HandleAddTypeInput(ChangeEventArgs e)
     {
         ViewModel.NewBrickModel.Type = e.Value?.ToString().ToTitleCase() ?? string.Empty;
     }
 
-    private Task HandleAddManufacturerChanged(string value)
+    Task HandleAddManufacturerChanged(string value)
     {
         ViewModel.SetAddManufacturerFromText(value);
         return Task.CompletedTask;
     }
 
-    private void HandleAddPriceInput(ChangeEventArgs e)
+    void HandleAddPriceInput(ChangeEventArgs e)
     {
         ViewModel.NewBrickModel.Price = BricksViewModel.ParseDecimalInput(e.Value?.ToString());
         ViewModel.ValidateAddNumericInputs();
     }
 
-    private void HandleAddStrengthInput(ChangeEventArgs e)
+    void HandleAddStrengthInput(ChangeEventArgs e)
     {
         ViewModel.NewBrickModel.Strength = BricksViewModel.ParseDecimalInput(e.Value?.ToString());
         ViewModel.ValidateAddNumericInputs();
     }
 
-    private void HandleAddWidthInput(ChangeEventArgs e)
+    void HandleAddWidthInput(ChangeEventArgs e)
     {
         ViewModel.NewBrickModel.Width = BricksViewModel.ParseDecimalInput(e.Value?.ToString());
         ViewModel.ValidateAddNumericInputs();
     }
 
-    private void HandleAddHeightInput(ChangeEventArgs e)
+    void HandleAddHeightInput(ChangeEventArgs e)
     {
         ViewModel.NewBrickModel.Height = BricksViewModel.ParseDecimalInput(e.Value?.ToString());
         ViewModel.ValidateAddNumericInputs();
     }
 
-    private void HandleAddDepthInput(ChangeEventArgs e)
+    void HandleAddDepthInput(ChangeEventArgs e)
     {
         ViewModel.NewBrickModel.Depth = BricksViewModel.ParseDecimalInput(e.Value?.ToString());
         ViewModel.ValidateAddNumericInputs();
     }
 
-    private void HandleAddVoidsInput(ChangeEventArgs e)
+    void HandleAddVoidsInput(ChangeEventArgs e)
     {
         ViewModel.NewBrickModel.Voids = BricksViewModel.ParseVoidsPercentInput(e.Value?.ToString());
     }
 
-    private void HandleEditNameInput(ChangeEventArgs e)
+    void HandleEditNameInput(ChangeEventArgs e)
     {
         if (ViewModel.EditBrickModel == null) return;
         ViewModel.EditBrickModel.Name = e.Value?.ToString().ToTitleCase() ?? string.Empty;
         ViewModel.ValidateEditBrickName();
     }
 
-    private void HandleEditColourInput(ChangeEventArgs e)
+    void HandleEditColourInput(ChangeEventArgs e)
     {
         if (ViewModel.EditBrickModel == null) return;
         ViewModel.EditBrickModel.Colour = e.Value?.ToString().ToTitleCase() ?? string.Empty;
     }
 
-    private void HandleEditMaterialInput(ChangeEventArgs e)
+    void HandleEditMaterialInput(ChangeEventArgs e)
     {
         if (ViewModel.EditBrickModel == null) return;
         ViewModel.EditBrickModel.Material = e.Value?.ToString().ToTitleCase() ?? string.Empty;
     }
 
-    private void HandleEditTypeInput(ChangeEventArgs e)
+    void HandleEditTypeInput(ChangeEventArgs e)
     {
         if (ViewModel.EditBrickModel == null) return;
         ViewModel.EditBrickModel.Type = e.Value?.ToString().ToTitleCase() ?? string.Empty;
     }
 
-    private Task HandleEditManufacturerChanged(string value)
+    Task HandleEditManufacturerChanged(string value)
     {
         ViewModel.SetEditManufacturerFromText(value);
         return Task.CompletedTask;
     }
 
-    private void HandleEditPriceInput(ChangeEventArgs e)
+    void HandleEditPriceInput(ChangeEventArgs e)
     {
         if (ViewModel.EditBrickModel == null) return;
         ViewModel.EditBrickModel.Price = BricksViewModel.ParseDecimalInput(e.Value?.ToString());
         ViewModel.ValidateEditNumericInputs();
     }
 
-    private void HandleEditStrengthInput(ChangeEventArgs e)
+    void HandleEditStrengthInput(ChangeEventArgs e)
     {
         if (ViewModel.EditBrickModel == null) return;
         ViewModel.EditBrickModel.Strength = BricksViewModel.ParseDecimalInput(e.Value?.ToString());
         ViewModel.ValidateEditNumericInputs();
     }
 
-    private void HandleEditWidthInput(ChangeEventArgs e)
+    void HandleEditWidthInput(ChangeEventArgs e)
     {
         if (ViewModel.EditBrickModel == null) return;
         ViewModel.EditBrickModel.Width = BricksViewModel.ParseDecimalInput(e.Value?.ToString());
         ViewModel.ValidateEditNumericInputs();
     }
 
-    private void HandleEditHeightInput(ChangeEventArgs e)
+    void HandleEditHeightInput(ChangeEventArgs e)
     {
         if (ViewModel.EditBrickModel == null) return;
         ViewModel.EditBrickModel.Height = BricksViewModel.ParseDecimalInput(e.Value?.ToString());
         ViewModel.ValidateEditNumericInputs();
     }
 
-    private void HandleEditDepthInput(ChangeEventArgs e)
+    void HandleEditDepthInput(ChangeEventArgs e)
     {
         if (ViewModel.EditBrickModel == null) return;
         ViewModel.EditBrickModel.Depth = BricksViewModel.ParseDecimalInput(e.Value?.ToString());
         ViewModel.ValidateEditNumericInputs();
     }
 
-    private void HandleEditVoidsInput(ChangeEventArgs e)
+    void HandleEditVoidsInput(ChangeEventArgs e)
     {
         if (ViewModel.EditBrickModel == null) return;
         ViewModel.EditBrickModel.Voids = BricksViewModel.ParseVoidsPercentInput(e.Value?.ToString());

@@ -1,10 +1,17 @@
 @page "/manufacturers"
 @page "/manufacturers/{SelectedId:long}"
-@inject SoftwareEngineeringDevOps.App.Auth.IAuthService AuthService
-@inject SoftwareEngineeringDevOps.App.Manufacturers.IManufacturersMediator ManufacturersMediator
-@inject SoftwareEngineeringDevOps.App.Bricks.IBricksMediator BricksMediator
-@inject SoftwareEngineeringDevOps.App.BrickOrders.IBrickOrdersMediator OrdersMediator
+@inject IAuthService AuthService
+@inject IManufacturersMediator ManufacturersMediator
+@inject IBricksMediator BricksMediator
+@inject IBrickOrdersMediator OrdersMediator
 @inject NavigationManager Navigation
+@inject IToastService ToastService
+
+@using SoftwareEngineeringDevOps.App.BrickOrders
+@using SoftwareEngineeringDevOps.App.Bricks
+@using SoftwareEngineeringDevOps.App.Manufacturers
+@using SoftwareEngineeringDevOps.App.Auth
+@using Components.ViewModels
 
 <PageTitle>Manufacturers</PageTitle>
 
@@ -14,7 +21,7 @@
             <h3>Manufacturers</h3>
             <div class="panel-header-actions">
                 <input class="form-input panel-header-search" placeholder="Search manufacturers..." @bind="ViewModel.ManufacturersSearchTerm" @bind:event="oninput" />
-                @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanCreate(ViewModel.CurrentUserRole))
+                @if (RoleHelper.CanCreate(ViewModel.CurrentUserRole))
                 {
                     <button class="btn btn-add" @onclick="ViewModel.OpenAddModal">
                         <span class="icon">&#xE710;</span>
@@ -61,13 +68,13 @@
                 <div class="detail-header">
                     <h3>@ViewModel.SelectedManufacturer.Name</h3>
                     <div class="detail-actions">
-                        @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanEdit(ViewModel.CurrentUserRole))
+                        @if (RoleHelper.CanEdit(ViewModel.CurrentUserRole))
                         {
                             <button class="btn btn-edit" @onclick="() => ViewModel.OpenEditModal(ViewModel.SelectedManufacturer)">
                                 <span class="icon">&#xE70F;</span>
                             </button>
                         }
-                        @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanDelete(ViewModel.CurrentUserRole))
+                        @if (RoleHelper.CanDelete(ViewModel.CurrentUserRole))
                         {
                             <button class="btn btn-delete" @onclick="() => HandleOpenDelete(ViewModel.SelectedManufacturer)">
                                 <span class="icon">&#xE74D;</span>
@@ -274,7 +281,7 @@
 }
 
 @code {
-    private Components.ViewModels.ManufacturersViewModel ViewModel { get; set; } = null!;
+    ManufacturersViewModel ViewModel { get; set; } = null!;
 
     [SupplyParameterFromQuery(Name = "action")]
     public string? Action { get; set; }
@@ -284,7 +291,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        ViewModel = new Components.ViewModels.ManufacturersViewModel(ManufacturersMediator, BricksMediator, OrdersMediator, AuthService);
+        ViewModel = new ManufacturersViewModel(ManufacturersMediator, BricksMediator, OrdersMediator, AuthService);
         await ViewModel.LoadManufacturers();
 
         if (SelectedId.HasValue)
@@ -303,94 +310,121 @@
         }
     }
 
-    private async Task HandleSelect(global::SoftwareEngineeringDevOps.App.Manufacturers.IManufacturer manufacturer)
+    async Task HandleSelect(IManufacturer manufacturer)
     {
         await ViewModel.SelectManufacturer(manufacturer);
         Navigation.NavigateTo($"/manufacturers/{manufacturer.Id}", forceLoad: false, replace: true);
     }
 
-    private async Task HandleOpenDelete(global::SoftwareEngineeringDevOps.App.Manufacturers.IManufacturer manufacturer)
+    async Task HandleOpenDelete(IManufacturer manufacturer)
     {
         await ViewModel.OpenDeleteConfirm(manufacturer);
     }
 
-    private async Task HandleAdd()
+    async Task HandleAdd()
     {
+        var name = ViewModel.NewManufacturerModel.Name;
         var success = await ViewModel.AddManufacturer();
-        if (success) Navigation.NavigateTo("/manufacturers", forceLoad: false, replace: true);
+        if (success)
+        {
+            ToastService.Show($"Manufacturer '{name}' created successfully.");
+            Navigation.NavigateTo("/manufacturers", forceLoad: false, replace: true);
+        }
+        else
+        {
+            ToastService.Show("Failed to add manufacturer. Please check the form.", ToastSeverity.Error);
+        }
     }
 
-    private async Task HandleUpdate()
+    async Task HandleUpdate()
     {
+        var name = ViewModel.EditManufacturerModel?.Name;
         var success = await ViewModel.UpdateManufacturer();
-        if (success) Navigation.NavigateTo("/manufacturers", forceLoad: false, replace: true);
+        if (success)
+        {
+            ToastService.Show($"Manufacturer '{name}' updated successfully.");
+            Navigation.NavigateTo("/manufacturers", forceLoad: false, replace: true);
+        }
+        else
+        {
+            ToastService.Show("Failed to update manufacturer. Please check the form.", ToastSeverity.Error);
+        }
     }
 
-    private async Task HandleDelete()
+    async Task HandleDelete()
     {
+        var name = ViewModel.SelectedManufacturer?.Name;
         var success = await ViewModel.DeleteManufacturer();
-        if (success) Navigation.NavigateTo("/manufacturers", forceLoad: false, replace: true);
+        if (success)
+        {
+            ToastService.Show($"Manufacturer '{name}' deleted.", ToastSeverity.Warning);
+            Navigation.NavigateTo("/manufacturers", forceLoad: false, replace: true);
+        }
+        else
+        {
+            ToastService.Show("Failed to delete manufacturer.", ToastSeverity.Error);
+        }
     }
 
-    private void HandleBrickClick(long brickId)
+    void HandleBrickClick(long brickId)
     {
         Navigation.NavigateTo($"/bricks/{brickId}");
     }
 
-    private void HandleAddNameInput(ChangeEventArgs e)
+    void HandleAddNameInput(ChangeEventArgs e)
     {
         ViewModel.NewManufacturerModel.Name = e.Value?.ToString().ToTitleCase() ?? string.Empty;
         ViewModel.ValidateAddManufacturerName();
     }
 
-    private void HandleAddAddress1Input(ChangeEventArgs e)
+    void HandleAddAddress1Input(ChangeEventArgs e)
     {
         ViewModel.NewManufacturerModel.Address1 = e.Value?.ToString().ToTitleCase() ?? string.Empty;
     }
 
-    private void HandleAddAddress2Input(ChangeEventArgs e)
+    void HandleAddAddress2Input(ChangeEventArgs e)
     {
         ViewModel.NewManufacturerModel.Address2 = e.Value?.ToString().ToTitleCase() ?? string.Empty;
     }
 
-    private void HandleAddPostcodeInput(ChangeEventArgs e)
+    void HandleAddPostcodeInput(ChangeEventArgs e)
     {
         ViewModel.NewManufacturerModel.Postcode = (e.Value?.ToString() ?? string.Empty).ToUpperInvariant();
     }
 
-    private void HandleAddPhoneInput(ChangeEventArgs e)
+    void HandleAddPhoneInput(ChangeEventArgs e)
     {
         ViewModel.NewManufacturerModel.PhoneNo = Components.ViewModels.ManufacturersViewModel.SanitizePhone(e.Value?.ToString());
     }
 
-    private void HandleEditNameInput(ChangeEventArgs e)
+    void HandleEditNameInput(ChangeEventArgs e)
     {
         if (ViewModel.EditManufacturerModel == null) return;
         ViewModel.EditManufacturerModel.Name = e.Value?.ToString().ToTitleCase() ?? string.Empty;
         ViewModel.ValidateEditManufacturerName();
     }
 
-    private void HandleEditAddress1Input(ChangeEventArgs e)
+    void HandleEditAddress1Input(ChangeEventArgs e)
     {
         if (ViewModel.EditManufacturerModel == null) return;
         ViewModel.EditManufacturerModel.Address1 = e.Value?.ToString().ToTitleCase() ?? string.Empty;
     }
 
-    private void HandleEditAddress2Input(ChangeEventArgs e)
+    void HandleEditAddress2Input(ChangeEventArgs e)
     {
         if (ViewModel.EditManufacturerModel == null) return;
         ViewModel.EditManufacturerModel.Address2 = e.Value?.ToString().ToTitleCase() ?? string.Empty;
     }
 
-    private void HandleEditPostcodeInput(ChangeEventArgs e)
+    void HandleEditPostcodeInput(ChangeEventArgs e)
     {
         if (ViewModel.EditManufacturerModel == null) return;
         ViewModel.EditManufacturerModel.Postcode = (e.Value?.ToString() ?? string.Empty).ToUpperInvariant();
     }
 
-    private void HandleEditPhoneInput(ChangeEventArgs e)
+    void HandleEditPhoneInput(ChangeEventArgs e)
     {
         if (ViewModel.EditManufacturerModel == null) return;
-        ViewModel.EditManufacturerModel.PhoneNo = Components.ViewModels.ManufacturersViewModel.SanitizePhone(e.Value?.ToString());
+        ViewModel.EditManufacturerModel.PhoneNo = ManufacturersViewModel.SanitizePhone(e.Value?.ToString());
     }
 }

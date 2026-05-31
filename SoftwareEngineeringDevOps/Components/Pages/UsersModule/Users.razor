@@ -1,8 +1,13 @@
 @page "/users"
 @page "/users/{SelectedId:long}"
-@inject SoftwareEngineeringDevOps.App.Auth.IAuthService AuthService
-@inject SoftwareEngineeringDevOps.App.Users.IUsersMediator UsersMediator
+@inject IAuthService AuthService
+@inject IUsersMediator UsersMediator
 @inject NavigationManager Navigation
+@inject IToastService ToastService
+
+@using Components.ViewModels
+@using SoftwareEngineeringDevOps.App.Users
+@using SoftwareEngineeringDevOps.App.Auth
 
 <PageTitle>Users</PageTitle>
 
@@ -232,7 +237,7 @@
 }
 
 @code {
-    private Components.ViewModels.UsersViewModel ViewModel { get; set; } = null!;
+    UsersViewModel ViewModel { get; set; } = null!;
 
     [SupplyParameterFromQuery(Name = "action")]
     public string? Action { get; set; }
@@ -242,7 +247,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        ViewModel = new Components.ViewModels.UsersViewModel(UsersMediator, AuthService);
+        ViewModel = new UsersViewModel(UsersMediator, AuthService);
         await ViewModel.LoadUsers();
 
         if (SelectedId.HasValue)
@@ -261,31 +266,56 @@
         }
     }
 
-    private void HandleSelect(global::SoftwareEngineeringDevOps.App.Users.IUser user)
+    void HandleSelect(IUser user)
     {
         ViewModel.SelectUser(user);
         Navigation.NavigateTo($"/users/{user.Id}", forceLoad: false, replace: true);
     }
 
-    private async Task HandleAddUser()
+    async Task HandleAddUser()
     {
         var success = await ViewModel.AddUser();
-        if (success) UpdateUrl(null, null);
+        if (success)
+        {
+            ToastService.Show($"User '{ViewModel.NewUserModel.Username}' created successfully.");
+            UpdateUrl(null, null);
+        }
+        else
+        {
+            ToastService.Show("Failed to add user. Please check the form.", ToastSeverity.Error);
+        }
     }
 
-    private async Task HandleUpdateUser()
+    async Task HandleUpdateUser()
     {
         var success = await ViewModel.UpdateUser();
-        if (success) UpdateUrl(null, null);
+        if (success)
+        {
+            ToastService.Show("User updated successfully.");
+            UpdateUrl(null, null);
+        }
+        else
+        {
+            ToastService.Show("Failed to update user. Please check the form.", ToastSeverity.Error);
+        }
     }
 
-    private async Task HandleDeleteUser()
+    async Task HandleDeleteUser()
     {
+        var deletedUsername = ViewModel.SelectedUser?.Username;
         var success = await ViewModel.DeleteUser();
-        if (success) UpdateUrl(null, null);
+        if (success)
+        {
+            ToastService.Show($"User '{deletedUsername}' deleted.", ToastSeverity.Warning);
+            UpdateUrl(null, null);
+        }
+        else
+        {
+            ToastService.Show("Failed to delete user.", ToastSeverity.Error);
+        }
     }
 
-    private void UpdateUrl(string? action, long? id)
+    void UpdateUrl(string? action, long? id)
     {
         var uri = "/users";
         if (action != null && id != null)
