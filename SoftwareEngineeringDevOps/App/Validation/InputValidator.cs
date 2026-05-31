@@ -283,6 +283,13 @@ namespace SoftwareEngineeringDevOps.App.Validation
             AddIfInvalid(errors, ValidateNonEmpty(b.Material, "Material"));
             AddIfInvalid(errors, ValidateNonEmpty(b.Type, "Type"));
             if (b.ManufacturerId <= 0) errors.Add("Manufacturer is required.");
+            if (b.Price < 0) errors.Add("Price cannot be negative.");
+            if (b.Strength < 0) errors.Add("Strength cannot be negative.");
+            if (b.Width < 0) errors.Add("Width cannot be negative.");
+            if (b.Height < 0) errors.Add("Height cannot be negative.");
+            if (b.Depth < 0) errors.Add("Depth cannot be negative.");
+            if (b.Width > 10000 || b.Height > 10000 || b.Depth > 10000) errors.Add("Dimensions must be 10,000 mm or less.");
+            if (b.Voids < 0 || b.Voids > 1) errors.Add("Voids must be between 0% and 100%.");
             return errors;
         }
 
@@ -294,6 +301,13 @@ namespace SoftwareEngineeringDevOps.App.Validation
             AddIfInvalid(errors, ValidateNonEmpty(b.Material, "Material"));
             AddIfInvalid(errors, ValidateNonEmpty(b.Type, "Type"));
             if (b.ManufacturerId <= 0) errors.Add("Manufacturer is required.");
+            if (b.Price < 0) errors.Add("Price cannot be negative.");
+            if (b.Strength < 0) errors.Add("Strength cannot be negative.");
+            if (b.Width < 0) errors.Add("Width cannot be negative.");
+            if (b.Height < 0) errors.Add("Height cannot be negative.");
+            if (b.Depth < 0) errors.Add("Depth cannot be negative.");
+            if (b.Width > 10000 || b.Height > 10000 || b.Depth > 10000) errors.Add("Dimensions must be 10,000 mm or less.");
+            if (b.Voids < 0 || b.Voids > 1) errors.Add("Voids must be between 0% and 100%.");
             return errors;
         }
 

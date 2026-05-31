@@ -60,7 +60,8 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public IEnumerable<IBrick> FilteredSelectedManufacturerBricks =>
             SelectedManufacturerBricks.Where(brick =>
                 string.IsNullOrWhiteSpace(ManufacturerBricksSearchTerm)
-                || brick.Name.Contains(ManufacturerBricksSearchTerm, StringComparison.OrdinalIgnoreCase));
+                || brick.Name.Contains(ManufacturerBricksSearchTerm, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(brick => brick.Name, StringComparer.OrdinalIgnoreCase);
 
         public async Task LoadManufacturers()
         {

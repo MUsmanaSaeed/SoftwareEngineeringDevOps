@@ -40,6 +40,17 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public string ManufacturerSearch { get; set; } = string.Empty;
         public string BricksSearchTerm { get; set; } = string.Empty;
         public string BrickOrdersSearchTerm { get; set; } = string.Empty;
+        public string? AddBrickNameValidationMessage { get; private set; }
+        public string? EditBrickNameValidationMessage { get; private set; }
+        public string? AddNumericValidationMessage { get; private set; }
+        public string? EditNumericValidationMessage { get; private set; }
+        public bool HasAddBrickNameConflict => !string.IsNullOrWhiteSpace(AddBrickNameValidationMessage);
+        public bool HasEditBrickNameConflict => !string.IsNullOrWhiteSpace(EditBrickNameValidationMessage);
+        public bool HasAddNumericInputError => !string.IsNullOrWhiteSpace(AddNumericValidationMessage);
+        public bool HasEditNumericInputError => !string.IsNullOrWhiteSpace(EditNumericValidationMessage);
+        public bool CanSubmitAddBrick => !HasAddBrickNameConflict && !HasAddNumericInputError;
+        public bool CanSubmitEditBrick => !HasEditBrickNameConflict && !HasEditNumericInputError;
+        public decimal MaxDimensionLimit => 10000m;
 
         public UserRole CurrentUserRole => _authService.CurrentUser != null
             ? RoleHelper.GetRole(_authService.CurrentUser)
@@ -92,6 +103,8 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         {
             NewBrickModel = new NewBrick();
             ManufacturerSearch = string.Empty;
+            AddBrickNameValidationMessage = null;
+            AddNumericValidationMessage = null;
             ValidationErrors.Clear();
             ShowAddModal = true;
         }
@@ -99,16 +112,33 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public void CloseAddModal()
         {
             ShowAddModal = false;
+            AddBrickNameValidationMessage = null;
+            AddNumericValidationMessage = null;
             ValidationErrors.Clear();
         }
 
         public async Task<bool> AddBrick()
         {
+            NormalizeNewBrickModel();
+            ValidateAddNumericInputs();
             ValidationErrors.Clear();
             var errors = InputValidator.ValidateBrick(NewBrickModel);
             if (errors.Count > 0)
             {
                 ValidationErrors = errors;
+                return false;
+            }
+
+            if (HasAddNumericInputError)
+            {
+                ValidationErrors.Add(AddNumericValidationMessage!);
+                return false;
+            }
+
+            if (await BrickNameExists(NewBrickModel.Name))
+            {
+                AddBrickNameValidationMessage = "Name already exists. Please use a different brick name.";
+                ValidationErrors.Add(AddBrickNameValidationMessage);
                 return false;
             }
 
@@ -124,6 +154,8 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         {
             EditBrickModel = new EditBrick(brick);
             ManufacturerSearch = string.Empty;
+            EditBrickNameValidationMessage = null;
+            EditNumericValidationMessage = null;
             ValidationErrors.Clear();
             ShowEditModal = true;
         }
@@ -131,6 +163,8 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public void CloseEditModal()
         {
             ShowEditModal = false;
+            EditBrickNameValidationMessage = null;
+            EditNumericValidationMessage = null;
             ValidationErrors.Clear();
         }
 
@@ -138,11 +172,26 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         {
             if (EditBrickModel == null) return false;
 
+            NormalizeEditBrickModel();
+            ValidateEditNumericInputs();
             ValidationErrors.Clear();
             var errors = InputValidator.ValidateBrick(EditBrickModel);
             if (errors.Count > 0)
             {
                 ValidationErrors = errors;
+                return false;
+            }
+
+            if (HasEditNumericInputError)
+            {
+                ValidationErrors.Add(EditNumericValidationMessage!);
+                return false;
+            }
+
+            if (await BrickNameExists(EditBrickModel.Name, EditBrickModel.Id))
+            {
+                EditBrickNameValidationMessage = "Name already exists. Please use a different brick name.";
+                ValidationErrors.Add(EditBrickNameValidationMessage);
                 return false;
             }
 
@@ -209,7 +258,134 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public static decimal ParseVoidsPercentInput(string? value)
         {
             if (string.IsNullOrWhiteSpace(value)) return 0m;
-            return decimal.TryParse(value, out var percent) ? percent / 100m : 0m;
+            if (!decimal.TryParse(value, out var percent)) return 0m;
+
+            var normalizedPercent = Math.Clamp(percent, 0m, 100m);
+            return normalizedPercent / 100m;
+        }
+
+        public void ValidateAddBrickName()
+        {
+            AddBrickNameValidationMessage = BrickNameExistsInLoadedList(NewBrickModel.Name)
+                ? "Name already exists. Please use a different brick name."
+                : null;
+        }
+
+        public void ValidateAddNumericInputs()
+        {
+            AddNumericValidationMessage = BuildNumericInputValidationMessage(
+                NewBrickModel.Price,
+                NewBrickModel.Strength,
+                NewBrickModel.Width,
+                NewBrickModel.Height,
+                NewBrickModel.Depth);
+        }
+
+        public void ValidateEditBrickName()
+        {
+            if (EditBrickModel == null)
+            {
+                EditBrickNameValidationMessage = null;
+                return;
+            }
+
+            EditBrickNameValidationMessage = BrickNameExistsInLoadedList(EditBrickModel.Name, EditBrickModel.Id)
+                ? "Name already exists. Please use a different brick name."
+                : null;
+        }
+
+        public void ValidateEditNumericInputs()
+        {
+            if (EditBrickModel == null)
+            {
+                EditNumericValidationMessage = null;
+                return;
+            }
+
+            EditNumericValidationMessage = BuildNumericInputValidationMessage(
+                EditBrickModel.Price,
+                EditBrickModel.Strength,
+                EditBrickModel.Width,
+                EditBrickModel.Height,
+                EditBrickModel.Depth);
+        }
+
+        static void NormalizeNewBrickModel(NewBrick model)
+        {
+            model.Name = (model.Name ?? string.Empty).ToTitleCase();
+            model.Colour = (model.Colour ?? string.Empty).ToTitleCase();
+            model.Material = (model.Material ?? string.Empty).ToTitleCase();
+            model.Type = (model.Type ?? string.Empty).ToTitleCase();
+            model.Price = Math.Max(model.Price, 0m);
+            model.Strength = Math.Max(model.Strength, 0m);
+            model.Width = Math.Clamp(model.Width, 0m, 10000m);
+            model.Height = Math.Clamp(model.Height, 0m, 10000m);
+            model.Depth = Math.Clamp(model.Depth, 0m, 10000m);
+            model.Voids = Math.Clamp(model.Voids, 0m, 1m);
+        }
+
+        void NormalizeNewBrickModel()
+        {
+            NormalizeNewBrickModel(NewBrickModel);
+        }
+
+        static void NormalizeEditBrickModel(EditBrick model)
+        {
+            model.Name = (model.Name ?? string.Empty).ToTitleCase();
+            model.Colour = (model.Colour ?? string.Empty).ToTitleCase();
+            model.Material = (model.Material ?? string.Empty).ToTitleCase();
+            model.Type = (model.Type ?? string.Empty).ToTitleCase();
+            model.Price = Math.Max(model.Price, 0m);
+            model.Strength = Math.Max(model.Strength, 0m);
+            model.Width = Math.Clamp(model.Width, 0m, 10000m);
+            model.Height = Math.Clamp(model.Height, 0m, 10000m);
+            model.Depth = Math.Clamp(model.Depth, 0m, 10000m);
+            model.Voids = Math.Clamp(model.Voids, 0m, 1m);
+        }
+
+        void NormalizeEditBrickModel()
+        {
+            if (EditBrickModel == null) return;
+            NormalizeEditBrickModel(EditBrickModel);
+        }
+
+        static string? BuildNumericInputValidationMessage(decimal price, decimal strength, decimal width, decimal height, decimal depth)
+        {
+            if (price < 0) return "Price cannot be negative.";
+            if (strength < 0) return "Strength cannot be negative.";
+            if (width < 0) return "Width cannot be negative.";
+            if (height < 0) return "Height cannot be negative.";
+            if (depth < 0) return "Depth cannot be negative.";
+            if (width > 10000m || height > 10000m || depth > 10000m) return "Dimensions must be 10,000 mm or less.";
+            return null;
+        }
+
+        public static decimal ParseDecimalInput(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return 0m;
+            return decimal.TryParse(value, out var parsedValue) ? parsedValue : 0m;
+        }
+
+        bool BrickNameExistsInLoadedList(string? name, long? excludeId = null)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return false;
+
+            var normalizedName = name.Trim();
+            return Bricks.Any(brick =>
+                brick.Id != excludeId
+                && string.Equals(brick.Name.Trim(), normalizedName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        async Task<bool> BrickNameExists(string? name, long? excludeId = null)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return false;
+
+            var normalizedName = name.Trim();
+            var bricks = await _bricksMediator.GetAllBricks();
+
+            return bricks.Any(brick =>
+                brick.Id != excludeId
+                && string.Equals(brick.Name.Trim(), normalizedName, StringComparison.OrdinalIgnoreCase));
         }
     }
 }
