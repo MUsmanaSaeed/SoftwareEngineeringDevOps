@@ -72,6 +72,10 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public string? ErrorMessage { get; set; }
         public string OrderGroupsSearchTerm { get; set; } = string.Empty;
         public string ReceivedSearchTerm { get; set; } = string.Empty;
+        public string? AddOrderDateValidationMessage { get; private set; }
+        public string? EditOrderDateValidationMessage { get; private set; }
+        public bool CanSubmitAddOrder => string.IsNullOrWhiteSpace(AddOrderDateValidationMessage);
+        public bool CanSubmitEditOrder => string.IsNullOrWhiteSpace(EditOrderDateValidationMessage);
 
         public UserRole CurrentUserRole => _currentUserRole;
 
@@ -138,8 +142,11 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public DateTime TodayDate => Today.Date;
         public string TodayInputValue => Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
+        public string AddOrderMinExpectedDateInputValue =>
+            NewOrderModel.OrderedDate.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
         public string? EditOrderMinExpectedDateInputValue =>
-            EditOrderModel?.OrderedDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            EditOrderModel?.OrderedDate.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
         public async Task LoadOrders()
         {
@@ -413,6 +420,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
                 ExpectedDate = Today.AddDays(14),
                 CreatedById = CurrentUserId
             };
+            AddOrderDateValidationMessage = null;
             ValidationErrors.Clear();
             ShowAddOrderModal = true;
         }
@@ -420,6 +428,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public void CloseAddOrderModal()
         {
             ShowAddOrderModal = false;
+            AddOrderDateValidationMessage = null;
             ValidationErrors.Clear();
         }
 
@@ -427,11 +436,17 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         {
             ValidationErrors.Clear();
             NewOrderModel.CreatedById = CurrentUserId;
+            ValidateAddOrderDates();
             var errors = InputValidator.ValidateBrickOrder(NewOrderModel);
             errors.AddRange(ValidateOrderDates(NewOrderModel.OrderedDate, NewOrderModel.ExpectedDate));
+            if (!string.IsNullOrWhiteSpace(AddOrderDateValidationMessage))
+            {
+                errors.Add(AddOrderDateValidationMessage);
+            }
+
             if (errors.Count > 0)
             {
-                ValidationErrors = errors;
+                ValidationErrors = errors.Distinct(StringComparer.Ordinal).ToList();
                 return false;
             }
 
@@ -447,6 +462,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public void OpenEditOrderModal(IBrickOrder order)
         {
             EditOrderModel = new EditBrickOrder(order);
+            EditOrderDateValidationMessage = null;
             ValidationErrors.Clear();
             ShowEditOrderModal = true;
         }
@@ -454,6 +470,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public void CloseEditOrderModal()
         {
             ShowEditOrderModal = false;
+            EditOrderDateValidationMessage = null;
             ValidationErrors.Clear();
         }
 
@@ -462,11 +479,17 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             if (EditOrderModel == null) return false;
 
             ValidationErrors.Clear();
+            ValidateEditOrderDates();
             var errors = InputValidator.ValidateBrickOrder(EditOrderModel);
-            errors.AddRange(ValidateOrderDates(EditOrderModel.OrderedDate, EditOrderModel.ExpectedDate, EditOrderModel.OrderedDate));
+            errors.AddRange(ValidateOrderDates(EditOrderModel.OrderedDate, EditOrderModel.ExpectedDate));
+            if (!string.IsNullOrWhiteSpace(EditOrderDateValidationMessage))
+            {
+                errors.Add(EditOrderDateValidationMessage);
+            }
+
             if (errors.Count > 0)
             {
-                ValidationErrors = errors;
+                ValidationErrors = errors.Distinct(StringComparer.Ordinal).ToList();
                 return false;
             }
 
@@ -623,7 +646,30 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             return true;
         }
 
-        private List<string> ValidateOrderDates(DateTime orderedDate, DateTime expectedDate, DateTime? minExpectedDate = null)
+        public void ValidateAddOrderDates()
+        {
+            AddOrderDateValidationMessage = BuildOrderDateValidationMessage(NewOrderModel.OrderedDate, NewOrderModel.ExpectedDate);
+        }
+
+        public void ValidateEditOrderDates()
+        {
+            if (EditOrderModel == null)
+            {
+                EditOrderDateValidationMessage = null;
+                return;
+            }
+
+            EditOrderDateValidationMessage = BuildOrderDateValidationMessage(EditOrderModel.OrderedDate, EditOrderModel.ExpectedDate);
+        }
+
+        static string? BuildOrderDateValidationMessage(DateTime orderedDate, DateTime expectedDate)
+        {
+            return expectedDate.Date < orderedDate.Date
+                ? "Expected date cannot be before the order date."
+                : null;
+        }
+
+        private List<string> ValidateOrderDates(DateTime orderedDate, DateTime expectedDate)
         {
             var errors = new List<string>();
 
@@ -632,12 +678,9 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
                 errors.Add("Order date cannot be greater than today.");
             }
 
-            var effectiveMin = (minExpectedDate ?? Today).Date;
-            if (expectedDate.Date < effectiveMin)
+            if (expectedDate.Date < orderedDate.Date)
             {
-                errors.Add(effectiveMin == TodayDate
-                    ? "Expected date cannot be less than today."
-                    : "Expected date cannot be before the order date.");
+                errors.Add("Expected date cannot be before the order date.");
             }
 
             return errors;

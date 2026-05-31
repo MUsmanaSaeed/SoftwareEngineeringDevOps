@@ -254,16 +254,20 @@
                 </div>
                 <div class="form-group">
                     <label>Order Date</label>
-                    <input class="form-input" type="date" max="@ViewModel.TodayInputValue" @bind="ViewModel.NewOrderModel.OrderedDate" />
+                    <input class="form-input" type="date" max="@ViewModel.TodayInputValue" value="@ViewModel.NewOrderModel.OrderedDate.ToString("yyyy-MM-dd")" @oninput="HandleAddOrderDateInput" />
                 </div>
                 <div class="form-group">
                     <label>Expected Date</label>
-                    <input class="form-input" type="date" min="@ViewModel.TodayInputValue" @bind="ViewModel.NewOrderModel.ExpectedDate" />
+                    <input class="form-input" type="date" min="@ViewModel.AddOrderMinExpectedDateInputValue" value="@ViewModel.NewOrderModel.ExpectedDate.ToString("yyyy-MM-dd")" @oninput="HandleAddExpectedDateInput" />
                 </div>
+                @if (!string.IsNullOrWhiteSpace(ViewModel.AddOrderDateValidationMessage))
+                {
+                    <div class="alert alert-error">@ViewModel.AddOrderDateValidationMessage</div>
+                }
             </div>
             <div class="modal-footer">
                 <button class="btn btn-cancel" @onclick="ViewModel.CloseAddOrderModal">Cancel</button>
-                <button class="btn btn-add" @onclick="HandleAddOrder">Save</button>
+                <button class="btn btn-add" @onclick="HandleAddOrder" disabled="@(!ViewModel.CanSubmitAddOrder)">Save</button>
             </div>
         </div>
     </div>
@@ -304,16 +308,20 @@
                 </div>
                 <div class="form-group">
                     <label>Order Date</label>
-                    <input class="form-input" type="date" max="@ViewModel.TodayInputValue" @bind="ViewModel.EditOrderModel.OrderedDate" />
+                    <input class="form-input" type="date" max="@ViewModel.TodayInputValue" value="@ViewModel.EditOrderModel.OrderedDate.ToString("yyyy-MM-dd")" @oninput="HandleEditOrderDateInput" />
                 </div>
                 <div class="form-group">
                     <label>Expected Date</label>
-                    <input class="form-input" type="date" min="@ViewModel.EditOrderMinExpectedDateInputValue" @bind="ViewModel.EditOrderModel.ExpectedDate" />
+                    <input class="form-input" type="date" min="@ViewModel.EditOrderMinExpectedDateInputValue" value="@ViewModel.EditOrderModel.ExpectedDate.ToString("yyyy-MM-dd")" @oninput="HandleEditExpectedDateInput" />
                 </div>
+                @if (!string.IsNullOrWhiteSpace(ViewModel.EditOrderDateValidationMessage))
+                {
+                    <div class="alert alert-error">@ViewModel.EditOrderDateValidationMessage</div>
+                }
             </div>
             <div class="modal-footer">
                 <button class="btn btn-cancel" @onclick="ViewModel.CloseEditOrderModal">Cancel</button>
-                <button class="btn btn-edit" @onclick="HandleUpdateOrder">Save</button>
+                <button class="btn btn-edit" @onclick="HandleUpdateOrder" disabled="@(!ViewModel.CanSubmitEditOrder)">Save</button>
             </div>
         </div>
     </div>
@@ -481,9 +489,39 @@
         await ViewModel.AddOrder();
     }
 
+    private void HandleAddOrderDateInput(ChangeEventArgs e)
+    {
+        if (!DateTime.TryParse(e.Value?.ToString(), out var value)) return;
+        ViewModel.NewOrderModel.OrderedDate = value;
+        ViewModel.ValidateAddOrderDates();
+    }
+
+    private void HandleAddExpectedDateInput(ChangeEventArgs e)
+    {
+        if (!DateTime.TryParse(e.Value?.ToString(), out var value)) return;
+        ViewModel.NewOrderModel.ExpectedDate = value;
+        ViewModel.ValidateAddOrderDates();
+    }
+
     private async Task HandleUpdateOrder()
     {
         await ViewModel.UpdateOrder();
+    }
+
+    private void HandleEditOrderDateInput(ChangeEventArgs e)
+    {
+        if (ViewModel.EditOrderModel == null) return;
+        if (!DateTime.TryParse(e.Value?.ToString(), out var value)) return;
+        ViewModel.EditOrderModel.OrderedDate = value;
+        ViewModel.ValidateEditOrderDates();
+    }
+
+    private void HandleEditExpectedDateInput(ChangeEventArgs e)
+    {
+        if (ViewModel.EditOrderModel == null) return;
+        if (!DateTime.TryParse(e.Value?.ToString(), out var value)) return;
+        ViewModel.EditOrderModel.ExpectedDate = value;
+        ViewModel.ValidateEditOrderDates();
     }
 
     private async Task HandleDeleteOrder()

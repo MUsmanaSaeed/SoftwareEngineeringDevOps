@@ -91,12 +91,15 @@
                     </div>
                 </div>
                 <div class="detail-section">
-                    <h4>Orders</h4>
+                    <div class="detail-section-header">
+                        <h4>Orders</h4>
+                        @if (ViewModel.SelectedBrickOrders.Any())
+                        {
+                            <input class="form-input" placeholder="Search orders..." @bind="ViewModel.BrickOrdersSearchTerm" @bind:event="oninput" />
+                        }
+                    </div>
                     @if (ViewModel.SelectedBrickOrders.Any())
                     {
-                        <div class="table-search table-search-sm">
-                            <input class="form-input" placeholder="Search orders..." @bind="ViewModel.BrickOrdersSearchTerm" @bind:event="oninput" />
-                        </div>
                         @if (ViewModel.FilteredSelectedBrickOrders.Any())
                         {
                             <table class="data-table data-table-sm">
