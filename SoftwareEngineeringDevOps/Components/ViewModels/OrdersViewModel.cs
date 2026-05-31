@@ -72,6 +72,12 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public string? ErrorMessage { get; set; }
         public string OrderGroupsSearchTerm { get; set; } = string.Empty;
         public string ReceivedSearchTerm { get; set; } = string.Empty;
+        public string AddBrickComboText { get; set; } = string.Empty;
+        public string EditBrickComboText { get; set; } = string.Empty;
+        public bool IsAddBrickSearchActive { get; set; }
+        public bool IsEditBrickSearchActive { get; set; }
+        public int AddBrickHighlightedIndex { get; private set; } = -1;
+        public int EditBrickHighlightedIndex { get; private set; } = -1;
         public string? AddOrderDateValidationMessage { get; private set; }
         public string? EditOrderDateValidationMessage { get; private set; }
         public bool CanSubmitAddOrder => string.IsNullOrWhiteSpace(AddOrderDateValidationMessage);
@@ -99,6 +105,12 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
                     .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
             }
         }
+
+        public IEnumerable<IBrick> FilteredAddBrickOptions =>
+            FilterBrickOptions(AddBrickComboText);
+
+        public IEnumerable<IBrick> FilteredEditBrickOptions =>
+            FilterBrickOptions(EditBrickComboText);
 
         public IEnumerable<IBrickOrder> SortedSelectedOrderLines =>
             _sortedSelectedOrderLines ??= _selectedOrderLines
@@ -420,6 +432,9 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
                 ExpectedDate = Today.AddDays(14),
                 CreatedById = CurrentUserId
             };
+            AddBrickComboText = string.Empty;
+            IsAddBrickSearchActive = false;
+            AddBrickHighlightedIndex = -1;
             AddOrderDateValidationMessage = null;
             ValidationErrors.Clear();
             ShowAddOrderModal = true;
@@ -428,6 +443,8 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public void CloseAddOrderModal()
         {
             ShowAddOrderModal = false;
+            IsAddBrickSearchActive = false;
+            AddBrickHighlightedIndex = -1;
             AddOrderDateValidationMessage = null;
             ValidationErrors.Clear();
         }
@@ -462,6 +479,9 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public void OpenEditOrderModal(IBrickOrder order)
         {
             EditOrderModel = new EditBrickOrder(order);
+            EditBrickComboText = GetBrickName(order.BrickId);
+            IsEditBrickSearchActive = false;
+            EditBrickHighlightedIndex = -1;
             EditOrderDateValidationMessage = null;
             ValidationErrors.Clear();
             ShowEditOrderModal = true;
@@ -470,6 +490,8 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public void CloseEditOrderModal()
         {
             ShowEditOrderModal = false;
+            IsEditBrickSearchActive = false;
+            EditBrickHighlightedIndex = -1;
             EditOrderDateValidationMessage = null;
             ValidationErrors.Clear();
         }
@@ -697,6 +719,108 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             }
 
             return errors;
+        }
+
+        public void SetAddBrickFromText(string? value)
+        {
+            AddBrickComboText = value?.Trim() ?? string.Empty;
+            NewOrderModel.BrickId = ResolveBrickId(AddBrickComboText);
+            AddBrickHighlightedIndex = -1;
+        }
+
+        public void SetEditBrickFromText(string? value)
+        {
+            if (EditOrderModel == null) return;
+
+            EditBrickComboText = value?.Trim() ?? string.Empty;
+            EditOrderModel.BrickId = ResolveBrickId(EditBrickComboText);
+            EditBrickHighlightedIndex = -1;
+        }
+
+        IEnumerable<IBrick> FilterBrickOptions(string? searchText)
+        {
+            if (string.IsNullOrWhiteSpace(searchText))
+            {
+                return Bricks.OrderBy(b => b.Name, StringComparer.OrdinalIgnoreCase);
+            }
+
+            return Bricks
+                .Where(b => b.Name.Contains(searchText.Trim(), StringComparison.OrdinalIgnoreCase))
+                .OrderBy(b => b.Name, StringComparer.OrdinalIgnoreCase);
+        }
+
+        long ResolveBrickId(string? brickName)
+        {
+            if (string.IsNullOrWhiteSpace(brickName)) return 0;
+
+            var brick = Bricks.FirstOrDefault(b =>
+                string.Equals(b.Name, brickName.Trim(), StringComparison.OrdinalIgnoreCase));
+            return brick?.Id ?? 0;
+        }
+
+        string GetBrickName(long brickId)
+        {
+            return GetBrick(brickId)?.Name ?? string.Empty;
+        }
+
+        public void MoveAddBrickHighlight(int direction)
+        {
+            var options = FilteredAddBrickOptions.ToList();
+            if (options.Count == 0)
+            {
+                AddBrickHighlightedIndex = -1;
+                return;
+            }
+
+            if (AddBrickHighlightedIndex < 0)
+            {
+                AddBrickHighlightedIndex = direction > 0 ? 0 : options.Count - 1;
+                return;
+            }
+
+            AddBrickHighlightedIndex = (AddBrickHighlightedIndex + direction + options.Count) % options.Count;
+        }
+
+        public void MoveEditBrickHighlight(int direction)
+        {
+            var options = FilteredEditBrickOptions.ToList();
+            if (options.Count == 0)
+            {
+                EditBrickHighlightedIndex = -1;
+                return;
+            }
+
+            if (EditBrickHighlightedIndex < 0)
+            {
+                EditBrickHighlightedIndex = direction > 0 ? 0 : options.Count - 1;
+                return;
+            }
+
+            EditBrickHighlightedIndex = (EditBrickHighlightedIndex + direction + options.Count) % options.Count;
+        }
+
+        public bool SelectHighlightedAddBrick()
+        {
+            var options = FilteredAddBrickOptions.ToList();
+            if (AddBrickHighlightedIndex < 0 || AddBrickHighlightedIndex >= options.Count)
+            {
+                return false;
+            }
+
+            SetAddBrickFromText(options[AddBrickHighlightedIndex].Name);
+            return true;
+        }
+
+        public bool SelectHighlightedEditBrick()
+        {
+            var options = FilteredEditBrickOptions.ToList();
+            if (EditBrickHighlightedIndex < 0 || EditBrickHighlightedIndex >= options.Count)
+            {
+                return false;
+            }
+
+            SetEditBrickFromText(options[EditBrickHighlightedIndex].Name);
+            return true;
         }
 
         public string FormatPrice(decimal price) => price.ToString("C2", EnGbCulture);

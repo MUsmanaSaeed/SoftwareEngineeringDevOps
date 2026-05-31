@@ -38,6 +38,10 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public List<string> ValidationErrors { get; set; } = new();
         public string? ErrorMessage { get; set; }
         public string ManufacturerSearch { get; set; } = string.Empty;
+        public string AddManufacturerComboText { get; set; } = string.Empty;
+        public string EditManufacturerComboText { get; set; } = string.Empty;
+        public bool IsAddManufacturerSearchActive { get; set; }
+        public bool IsEditManufacturerSearchActive { get; set; }
         public string BricksSearchTerm { get; set; } = string.Empty;
         public string BrickOrdersSearchTerm { get; set; } = string.Empty;
         public string? AddBrickNameValidationMessage { get; private set; }
@@ -60,6 +64,12 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             string.IsNullOrWhiteSpace(ManufacturerSearch)
                 ? Manufacturers
                 : Manufacturers.Where(m => m.Name.Contains(ManufacturerSearch, StringComparison.OrdinalIgnoreCase));
+
+        public IEnumerable<IManufacturer> FilteredAddManufacturerOptions =>
+            FilterManufacturerOptions(AddManufacturerComboText);
+
+        public IEnumerable<IManufacturer> FilteredEditManufacturerOptions =>
+            FilterManufacturerOptions(EditManufacturerComboText);
 
         public IEnumerable<IBrick> FilteredBricks =>
             Bricks.Where(brick =>
@@ -103,6 +113,8 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         {
             NewBrickModel = new NewBrick();
             ManufacturerSearch = string.Empty;
+            AddManufacturerComboText = string.Empty;
+            IsAddManufacturerSearchActive = false;
             AddBrickNameValidationMessage = null;
             AddNumericValidationMessage = null;
             ValidationErrors.Clear();
@@ -154,6 +166,8 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         {
             EditBrickModel = new EditBrick(brick);
             ManufacturerSearch = string.Empty;
+            EditManufacturerComboText = GetManufacturerName(brick.Manufacturer.Id);
+            IsEditManufacturerSearchActive = false;
             EditBrickNameValidationMessage = null;
             EditNumericValidationMessage = null;
             ValidationErrors.Clear();
@@ -364,6 +378,46 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         {
             if (string.IsNullOrWhiteSpace(value)) return 0m;
             return decimal.TryParse(value, out var parsedValue) ? parsedValue : 0m;
+        }
+
+        public void SetAddManufacturerFromText(string? value)
+        {
+            AddManufacturerComboText = value?.Trim() ?? string.Empty;
+            NewBrickModel.ManufacturerId = ResolveManufacturerId(AddManufacturerComboText);
+        }
+
+        public void SetEditManufacturerFromText(string? value)
+        {
+            if (EditBrickModel == null) return;
+
+            EditManufacturerComboText = value?.Trim() ?? string.Empty;
+            EditBrickModel.ManufacturerId = ResolveManufacturerId(EditManufacturerComboText);
+        }
+
+        long ResolveManufacturerId(string? manufacturerName)
+        {
+            if (string.IsNullOrWhiteSpace(manufacturerName)) return 0;
+
+            var manufacturer = Manufacturers.FirstOrDefault(m =>
+                string.Equals(m.Name, manufacturerName.Trim(), StringComparison.OrdinalIgnoreCase));
+            return manufacturer?.Id ?? 0;
+        }
+
+        string GetManufacturerName(long manufacturerId)
+        {
+            return Manufacturers.FirstOrDefault(m => m.Id == manufacturerId)?.Name ?? string.Empty;
+        }
+
+        IEnumerable<IManufacturer> FilterManufacturerOptions(string? searchText)
+        {
+            if (string.IsNullOrWhiteSpace(searchText))
+            {
+                return Manufacturers.OrderBy(m => m.Name, StringComparer.OrdinalIgnoreCase);
+            }
+
+            return Manufacturers
+                .Where(m => m.Name.Contains(searchText.Trim(), StringComparison.OrdinalIgnoreCase))
+                .OrderBy(m => m.Name, StringComparer.OrdinalIgnoreCase);
         }
 
         bool BrickNameExistsInLoadedList(string? name, long? excludeId = null)

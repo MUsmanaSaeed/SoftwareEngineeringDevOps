@@ -175,14 +175,10 @@
                 </div>
                 <div class="form-group">
                     <label>Manufacturer</label>
-                    <input class="form-input" placeholder="Search manufacturers..." @bind="ViewModel.ManufacturerSearch" @bind:event="oninput" />
-                    <select class="form-input" @bind="ViewModel.NewBrickModel.ManufacturerId">
-                        <option value="0">-- Select --</option>
-                        @foreach (var m in ViewModel.FilteredManufacturers)
-                        {
-                            <option value="@m.Id">@m.Name</option>
-                        }
-                    </select>
+                    <SearchableCombobox Value="@ViewModel.AddManufacturerComboText"
+                                        ValueChanged="HandleAddManufacturerChanged"
+                                        Options="@ViewModel.Manufacturers.Select(m => m.Name)"
+                                        Placeholder="Search manufacturers..." />
                 </div>
                 <div class="form-group">
                     <label>Price (£)</label>
@@ -261,13 +257,10 @@
                 </div>
                 <div class="form-group">
                     <label>Manufacturer</label>
-                    <input class="form-input" placeholder="Search manufacturers..." @bind="ViewModel.ManufacturerSearch" @bind:event="oninput" />
-                    <select class="form-input" @bind="ViewModel.EditBrickModel.ManufacturerId">
-                        @foreach (var m in ViewModel.FilteredManufacturers)
-                        {
-                            <option value="@m.Id">@m.Name</option>
-                        }
-                    </select>
+                    <SearchableCombobox Value="@ViewModel.EditManufacturerComboText"
+                                        ValueChanged="HandleEditManufacturerChanged"
+                                        Options="@ViewModel.Manufacturers.Select(m => m.Name)"
+                                        Placeholder="Search manufacturers..." />
                 </div>
                 <div class="form-group">
                     <label>Price (£)</label>
@@ -421,6 +414,12 @@
         ViewModel.NewBrickModel.Type = e.Value?.ToString().ToTitleCase() ?? string.Empty;
     }
 
+    private Task HandleAddManufacturerChanged(string value)
+    {
+        ViewModel.SetAddManufacturerFromText(value);
+        return Task.CompletedTask;
+    }
+
     private void HandleAddPriceInput(ChangeEventArgs e)
     {
         ViewModel.NewBrickModel.Price = BricksViewModel.ParseDecimalInput(e.Value?.ToString());
@@ -479,6 +478,12 @@
     {
         if (ViewModel.EditBrickModel == null) return;
         ViewModel.EditBrickModel.Type = e.Value?.ToString().ToTitleCase() ?? string.Empty;
+    }
+
+    private Task HandleEditManufacturerChanged(string value)
+    {
+        ViewModel.SetEditManufacturerFromText(value);
+        return Task.CompletedTask;
     }
 
     private void HandleEditPriceInput(ChangeEventArgs e)

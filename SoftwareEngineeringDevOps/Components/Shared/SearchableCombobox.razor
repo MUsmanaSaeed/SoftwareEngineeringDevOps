@@ -1,0 +1,126 @@
+<div class="combobox-wrap">
+    <input class="form-input combobox-input"
+           placeholder="@Placeholder"
+           value="@Value"
+           @ref="_inputRef"
+           @oninput="HandleInput"
+           @onfocus="HandleFocus"
+           @onblur="HandleBlur"
+           @onkeydown="HandleKeyDown" />
+
+    @if (!string.IsNullOrWhiteSpace(Value))
+    {
+        <button type="button" class="combobox-clear-btn" title="Clear" tabindex="-1" @onmousedown="HandleClear">
+            <span class="icon">&#xE711;</span>
+        </button>
+    }
+
+    @if (_isActive && FilteredOptions.Any())
+    {
+        <div class="combobox-options">
+            @foreach (var option in FilteredOptions.Select((item, index) => new { item, index }))
+            {
+                <button type="button"
+                        class="combobox-option @(_highlightedIndex == option.index ? "combobox-option-active" : string.Empty)"
+                        @onmousedown="() => HandleSelect(option.item)">
+                    @option.item
+                </button>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private ElementReference _inputRef;
+    private bool _isActive;
+    private int _highlightedIndex = -1;
+
+    [Parameter]
+    public string Value { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+
+    [Parameter]
+    public IEnumerable<string> Options { get; set; } = Enumerable.Empty<string>();
+
+    [Parameter]
+    public string Placeholder { get; set; } = string.Empty;
+
+    IEnumerable<string> FilteredOptions => string.IsNullOrWhiteSpace(Value)
+        ? Options.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+        : Options.Where(x => !string.IsNullOrWhiteSpace(x) && x.Contains(Value, StringComparison.OrdinalIgnoreCase)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x, StringComparer.OrdinalIgnoreCase);
+
+    private async Task HandleInput(ChangeEventArgs e)
+    {
+        Value = e.Value?.ToString()?.Trim() ?? string.Empty;
+        _highlightedIndex = -1;
+        _isActive = true;
+        await ValueChanged.InvokeAsync(Value);
+    }
+
+    private void HandleFocus()
+    {
+        _isActive = true;
+    }
+
+    private async Task HandleBlur()
+    {
+        await Task.Delay(100);
+        _isActive = false;
+
+        if (!string.IsNullOrWhiteSpace(Value) && !Options.Any(x => string.Equals(x, Value, StringComparison.OrdinalIgnoreCase)))
+        {
+            Value = string.Empty;
+            await ValueChanged.InvokeAsync(Value);
+        }
+    }
+
+    private async Task HandleClear()
+    {
+        Value = string.Empty;
+        _highlightedIndex = -1;
+        _isActive = true;
+        await ValueChanged.InvokeAsync(Value);
+        await _inputRef.FocusAsync();
+    }
+
+    private async Task HandleSelect(string option)
+    {
+        Value = option;
+        _highlightedIndex = -1;
+        _isActive = false;
+        await ValueChanged.InvokeAsync(Value);
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (!_isActive)
+        {
+            return;
+        }
+
+        var options = FilteredOptions.ToList();
+        if (!options.Any())
+        {
+            _highlightedIndex = -1;
+            return;
+        }
+
+        if (e.Key == "ArrowDown")
+        {
+            _highlightedIndex = _highlightedIndex < 0 ? 0 : (_highlightedIndex + 1) % options.Count;
+        }
+        else if (e.Key == "ArrowUp")
+        {
+            _highlightedIndex = _highlightedIndex < 0 ? options.Count - 1 : (_highlightedIndex - 1 + options.Count) % options.Count;
+        }
+        else if (e.Key == "Enter")
+        {
+            if (_highlightedIndex >= 0 && _highlightedIndex < options.Count)
+            {
+                await HandleSelect(options[_highlightedIndex]);
+            }
+        }
+    }
+}
