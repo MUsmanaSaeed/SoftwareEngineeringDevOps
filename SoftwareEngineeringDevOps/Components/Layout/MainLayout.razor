@@ -2,31 +2,28 @@
 @inject SoftwareEngineeringDevOps.App.Auth.IAuthService AuthService
 @inject NavigationManager Navigation
 
+@if (!_authChecked)
+{
+    <div class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+    return;
+}
+
 @if (!AuthService.IsAuthenticated)
 {
-    Navigation.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(Navigation.ToBaseRelativePath(Navigation.Uri))}", forceLoad: false);
     return;
 }
 
 <div class="app-layout">
     <aside class="side-nav">
         <div class="side-nav-header">
-            <img src="logos/acs_logo_white.png" alt="ACS Logo" class="nav-logo logo-dark" />
-            <img src="logos/acs_logo_black.png" alt="ACS Logo" class="nav-logo logo-light" />
+            <button class="nav-logo-btn" @onclick='() => Navigation.NavigateTo("/")' title="Go to home">
+                <img src="logos/acs_logo_white.png" alt="ACS Logo" class="nav-logo logo-dark" />
+                <img src="logos/acs_logo_black.png" alt="ACS Logo" class="nav-logo logo-light" />
+            </button>
         </div>
         <nav class="side-nav-menu">
-            <NavLink class="nav-item" href="manufacturers" Match="NavLinkMatch.Prefix">
-                <span class="icon">&#xE731;</span>
-                <span class="nav-text">Manufacturers</span>
-            </NavLink>
-            <NavLink class="nav-item" href="bricks" Match="NavLinkMatch.Prefix">
-                <span class="icon">&#xE80F;</span>
-                <span class="nav-text">Bricks</span>
-            </NavLink>
-            <NavLink class="nav-item" href="brick-orders" Match="NavLinkMatch.Prefix">
-                <span class="icon">&#xE719;</span>
-                <span class="nav-text">Orders</span>
-            </NavLink>
             @if (AuthService.CurrentUser?.IsAdmin == true)
             {
                 <NavLink class="nav-item" href="users" Match="NavLinkMatch.Prefix">
@@ -34,6 +31,18 @@
                     <span class="nav-text">Users</span>
                 </NavLink>
             }
+            <NavLink class="nav-item" href="manufacturers" Match="NavLinkMatch.Prefix">
+                <span class="icon">&#xE731;</span>
+                <span class="nav-text">Manufacturers</span>
+            </NavLink>
+            <NavLink class="nav-item" href="bricks" Match="NavLinkMatch.Prefix">
+                <span class="icon">&#xECA5;</span>
+                <span class="nav-text">Bricks</span>
+            </NavLink>
+            <NavLink class="nav-item" href="orders" Match="NavLinkMatch.Prefix">
+                <span class="icon">&#xE719;</span>
+                <span class="nav-text">Orders</span>
+            </NavLink>
         </nav>
         <div class="side-nav-footer">
             <div class="user-info">
@@ -45,12 +54,6 @@
         </div>
     </aside>
     <main class="main-content">
-        @if (IsLoading)
-        {
-            <div class="loading-overlay">
-                <div class="loading-spinner"></div>
-            </div>
-        }
         <article class="page-content">
             @Body
         </article>
@@ -58,19 +61,37 @@
 </div>
 
 <ThemeToggle />
+<ToastContainer />
 
-<div id="blazor-error-ui" data-nosnippet>
+<div id="blazor-error-ui">
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
 
 @code {
-    private bool IsLoading { get; set; }
+    bool _authChecked;
 
-    private async Task HandleLogout()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await AuthService.Logout();
+        if (!firstRender) return;
+
+        await AuthService.GetCurrentUserAsync();
+        _authChecked = true;
+
+        if (!AuthService.IsAuthenticated)
+        {
+            var returnUrl = "/" + Navigation.ToBaseRelativePath(Navigation.Uri);
+            Navigation.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(returnUrl)}", forceLoad: false);
+            return;
+        }
+
+        StateHasChanged();
+    }
+
+    async Task HandleLogout()
+    {
+        await AuthService.LogoutAsync();
         Navigation.NavigateTo("/login", forceLoad: true);
     }
 }

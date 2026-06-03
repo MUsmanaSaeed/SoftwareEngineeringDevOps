@@ -1,7 +1,13 @@
 @page "/users"
-@inject SoftwareEngineeringDevOps.App.Auth.IAuthService AuthService
-@inject SoftwareEngineeringDevOps.App.Users.IUsersMediator UsersMediator
+@page "/users/{SelectedId:long}"
+@inject IAuthService AuthService
+@inject IUsersMediator UsersMediator
 @inject NavigationManager Navigation
+@inject IToastService ToastService
+
+@using Components.ViewModels
+@using SoftwareEngineeringDevOps.App.Users
+@using SoftwareEngineeringDevOps.App.Auth
 
 <PageTitle>Users</PageTitle>
 
@@ -15,31 +21,43 @@
     <div class="split-left">
         <div class="panel-header">
             <h3>Users</h3>
-            <button class="btn btn-add" @onclick="ViewModel.OpenAddModal">
-                <span class="icon">&#xE710;</span>
-            </button>
+            <div class="panel-header-actions">
+                <input class="form-input panel-header-search" placeholder="Search users..." @bind="ViewModel.UsersSearchTerm" @bind:event="oninput" />
+                <button class="btn btn-add" @onclick="ViewModel.OpenAddModal">
+                    <span class="icon">&#xE710;</span>
+                </button>
+            </div>
         </div>
         <div class="data-table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Username</th>
-                        <th>Name</th>
-                        <th>Role</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var user in ViewModel.Users)
-                    {
-                        <tr class="@(ViewModel.SelectedUser?.Id == user.Id ? "selected" : "")"
-                            @onclick="() => ViewModel.SelectUser(user)">
-                            <td>@user.Username</td>
-                            <td>@user.FirstName @user.LastName</td>
-                            <td>@(user.IsAdmin ? "Admin" : user.IsEditor ? "Editor" : "Standard")</td>
+            @if (ViewModel.FilteredUsers.Any())
+            {
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Name</th>
+                            <th>Role</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in ViewModel.FilteredUsers)
+                        {
+                            <tr class="@(ViewModel.SelectedUser?.Id == user.Id ? "selected" : "")"
+                                @onclick="() => HandleSelect(user)">
+                                <td>@user.Username</td>
+                                <td>@user.FirstName @user.LastName</td>
+                                <td>@(user.IsAdmin ? "Admin" : user.IsEditor ? "Editor" : "Standard")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="no-results">
+                    <p>No users found</p>
+                </div>
+            }
         </div>
     </div>
     <div class="split-right">
@@ -219,17 +237,17 @@
 }
 
 @code {
-    private Components.ViewModels.UsersViewModel ViewModel { get; set; } = null!;
+    UsersViewModel ViewModel { get; set; } = null!;
 
     [SupplyParameterFromQuery(Name = "action")]
     public string? Action { get; set; }
 
-    [SupplyParameterFromQuery(Name = "id")]
+    [Parameter]
     public long? SelectedId { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        ViewModel = new Components.ViewModels.UsersViewModel(UsersMediator, AuthService);
+        ViewModel = new UsersViewModel(UsersMediator, AuthService);
         await ViewModel.LoadUsers();
 
         if (SelectedId.HasValue)
@@ -248,29 +266,60 @@
         }
     }
 
-    private async Task HandleAddUser()
+    void HandleSelect(IUser user)
+    {
+        ViewModel.SelectUser(user);
+        Navigation.NavigateTo($"/users/{user.Id}", forceLoad: false, replace: true);
+    }
+
+    async Task HandleAddUser()
     {
         var success = await ViewModel.AddUser();
-        if (success) UpdateUrl(null, null);
+        if (success)
+        {
+            ToastService.Show($"User '{ViewModel.NewUserModel.Username}' created successfully.");
+            UpdateUrl(null, null);
+        }
+        else
+        {
+            ToastService.Show("Failed to add user. Please check the form.", ToastSeverity.Error);
+        }
     }
 
-    private async Task HandleUpdateUser()
+    async Task HandleUpdateUser()
     {
         var success = await ViewModel.UpdateUser();
-        if (success) UpdateUrl(null, null);
+        if (success)
+        {
+            ToastService.Show("User updated successfully.");
+            UpdateUrl(null, null);
+        }
+        else
+        {
+            ToastService.Show("Failed to update user. Please check the form.", ToastSeverity.Error);
+        }
     }
 
-    private async Task HandleDeleteUser()
+    async Task HandleDeleteUser()
     {
+        var deletedUsername = ViewModel.SelectedUser?.Username;
         var success = await ViewModel.DeleteUser();
-        if (success) UpdateUrl(null, null);
+        if (success)
+        {
+            ToastService.Show($"User '{deletedUsername}' deleted.", ToastSeverity.Warning);
+            UpdateUrl(null, null);
+        }
+        else
+        {
+            ToastService.Show("Failed to delete user.", ToastSeverity.Error);
+        }
     }
 
-    private void UpdateUrl(string? action, long? id)
+    void UpdateUrl(string? action, long? id)
     {
         var uri = "/users";
         if (action != null && id != null)
-            uri = $"/users?action={action}&id={id}";
+            uri = $"/users/{id}?action={action}";
         else if (action != null)
             uri = $"/users?action={action}";
         Navigation.NavigateTo(uri, forceLoad: false, replace: true);

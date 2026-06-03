@@ -6,7 +6,7 @@
 
 <PageTitle>Register</PageTitle>
 
-<div class="auth-form">
+<div class="auth-form" @onkeydown="HandleKeyDown">
     <h2>Create Account</h2>
 
     @if (!string.IsNullOrEmpty(ViewModel.ErrorMessage))
@@ -28,17 +28,25 @@
 
     <div class="form-group">
         <label for="firstname">First Name</label>
-        <input id="firstname" type="text" class="form-input" @bind="ViewModel.FirstName" @bind:event="oninput" />
+        <input id="firstname" type="text" class="form-input"
+               value="@ViewModel.FirstName"
+               @oninput="HandleFirstNameInput"
+               @onblur="HandleNameBlur" />
     </div>
 
     <div class="form-group">
         <label for="lastname">Last Name</label>
-        <input id="lastname" type="text" class="form-input" @bind="ViewModel.LastName" @bind:event="oninput" />
+        <input id="lastname" type="text" class="form-input"
+               value="@ViewModel.LastName"
+               @oninput="HandleLastNameInput"
+               @onblur="HandleNameBlur" />
     </div>
 
     <div class="form-group">
         <label for="username">Username</label>
-        <input id="username" type="text" class="form-input" @bind="ViewModel.Username" @bind:event="oninput" />
+        <input id="username" type="text" class="form-input"
+               value="@ViewModel.Username"
+               @oninput="HandleUsernameInput" />
     </div>
 
     <div class="form-group">
@@ -66,9 +74,11 @@
 @code {
     private Components.ViewModels.RegisterViewModel ViewModel { get; set; } = null!;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         ViewModel = new Components.ViewModels.RegisterViewModel(UsersMediator, AuthService);
+
+        await AuthService.GetCurrentUserAsync();
 
         if (AuthService.IsAuthenticated)
         {
@@ -83,5 +93,36 @@
         {
             Navigation.NavigateTo("/", forceLoad: false);
         }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !ViewModel.IsLoading)
+            await HandleRegister();
+    }
+
+    private async Task HandleFirstNameInput(ChangeEventArgs e)
+    {
+        ViewModel.FirstName = e.Value?.ToString().ToTitleCase() ?? string.Empty;
+        await ViewModel.GenerateUsernameAsync();
+    }
+
+    private async Task HandleLastNameInput(ChangeEventArgs e)
+    {
+        ViewModel.LastName = e.Value?.ToString().ToTitleCase() ?? string.Empty;
+        await ViewModel.GenerateUsernameAsync();
+    }
+
+    private async Task HandleNameBlur()
+    {
+        await ViewModel.GenerateUsernameAsync();
+    }
+
+    private void HandleUsernameInput(ChangeEventArgs e)
+    {
+        string value = e.Value?.ToString() ?? string.Empty;
+        ViewModel.Username = value;
+        // If the user clears the field, allow auto-generation to take over again
+        ViewModel.IsUsernameManuallyEdited = !string.IsNullOrEmpty(value);
     }
 }

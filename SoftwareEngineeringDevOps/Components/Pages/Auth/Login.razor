@@ -1,7 +1,6 @@
 @page "/login"
 @layout Layout.AuthLayout
 @inject SoftwareEngineeringDevOps.App.Auth.IAuthService AuthService
-@inject SoftwareEngineeringDevOps.App.Users.IUsersMediator UsersMediator
 @inject NavigationManager Navigation
 
 <PageTitle>Login</PageTitle>
@@ -53,6 +52,13 @@
     {
         ViewModel = new Components.ViewModels.LoginViewModel(AuthService);
         ViewModel.ReturnUrl = ReturnUrl;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        await AuthService.GetCurrentUserAsync();
 
         if (AuthService.IsAuthenticated)
         {

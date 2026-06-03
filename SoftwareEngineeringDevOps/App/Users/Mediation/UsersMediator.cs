@@ -1,54 +1,50 @@
-﻿using SoftwareEngineeringDevOps.App.Users.Persistence;
+﻿using SoftwareEngineeringDevOps.App.Users.Repository;
 
 namespace SoftwareEngineeringDevOps.App.Users
 {
     public class UsersMediator : IUsersMediator
     {
-        IUsersDB Db { get; }
+        IUsersRepository Repository { get; }
 
-        public UsersMediator(IUsersDB db) 
-        { 
-            Db = db;
+        public UsersMediator(IUsersRepository repository)
+        {
+            Repository = repository;
         }
 
         public async Task<IEnumerable<IUser>> GetAllUsers()
         {
             await Task.CompletedTask;
-            return Db.ListAll().Select(User.FromDBO);
+            return Repository.ListAll();
         }
 
         public async Task<IUser?> GetUserById(long id)
         {
             await Task.CompletedTask;
-            var dbo = Db.GetById(id);
-            return dbo == null ? null : User.FromDBO(dbo);
+            return Repository.GetById(id);
         }
 
         public async Task<IUser?> GetUserByUsername(string username)
         {
             await Task.CompletedTask;
-            var dbo = Db.GetByUsername(username);
-            return dbo == null ? null : User.FromDBO(dbo);
+            return Repository.GetByUsername(username);
         }
 
         public async Task<IUser> Insert(NewUser user)
         {
             await Task.CompletedTask;
-            var dbo = Db.Insert(user);
-            return User.FromDBO(dbo);
+            return Repository.Insert(user);
         }
 
         public async Task<IUser> Update(EditUser user)
         {
             await Task.CompletedTask;
-            var dbo = Db.Update(user);
-            return User.FromDBO(dbo);
+            return Repository.Update(user);
         }
 
         public async Task Delete(long id)
         {
             await Task.CompletedTask;
-            Db.Delete(id);
+            Repository.Delete(id);
         }
     }
 }

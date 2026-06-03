@@ -20,8 +20,50 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
         public string? ErrorMessage { get; set; }
-        public List<string> ValidationErrors { get; set; } = new();
+        public List<string> ValidationErrors { get; set; } = [];
         public bool IsLoading { get; set; }
+
+        /// <summary>Tracks whether the user has manually edited the username field.</summary>
+        public bool IsUsernameManuallyEdited { get; set; }
+
+        /// <summary>
+        /// Generates a unique username from first + last name and updates <see cref="Username"/>
+        /// unless the user has already manually edited the field.
+        /// </summary>
+        public async Task GenerateUsernameAsync()
+        {
+            if (IsUsernameManuallyEdited) return;
+
+            var firstName = FirstName.Trim();
+            var lastName = LastName.Trim();
+
+            if (string.IsNullOrWhiteSpace(firstName) && string.IsNullOrWhiteSpace(lastName))
+            {
+                Username = string.Empty;
+                return;
+            }
+
+            var baseUsername = $"{firstName}{lastName}"
+                .ToLowerInvariant()
+                .Replace(" ", string.Empty);
+
+            var candidate = baseUsername;
+            var existing = await _usersMediator.GetUserByUsername(candidate);
+
+            if (existing != null)
+            {
+                int suffix = 2;
+                do
+                {
+                    candidate = $"{baseUsername}{suffix:D2}";
+                    existing = await _usersMediator.GetUserByUsername(candidate);
+                    suffix++;
+                }
+                while (existing != null);
+            }
+
+            Username = candidate;
+        }
 
         public async Task<bool> ExecuteRegister()
         {
@@ -56,7 +98,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             }
 
             await _usersMediator.Insert(newUser);
-            await _authService.Login(Username, Password);
+            await _authService.LoginAsync(Username, Password);
             IsLoading = false;
             return true;
         }

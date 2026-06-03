@@ -31,7 +31,8 @@
     {
         if (firstRender)
         {
-            CurrentTheme = await JS.InvokeAsync<string>("themeManager.getTheme") ?? "system";
+            var savedTheme = await JS.InvokeAsync<string>("themeManager.getTheme");
+            CurrentTheme = string.IsNullOrWhiteSpace(savedTheme) ? "system" : savedTheme;
             StateHasChanged();
         }
     }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using SoftwareEngineeringDevOps.App.Auth;
 using SoftwareEngineeringDevOps.App.Bricks;
 using SoftwareEngineeringDevOps.App.BrickOrders;
@@ -25,11 +26,28 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             _authService = authService;
         }
 
-        public IEnumerable<IBrickOrder> AllOrders { get; set; } = Enumerable.Empty<IBrickOrder>();
-        public IEnumerable<IBrick> Bricks { get; set; } = Enumerable.Empty<IBrick>();
-        public IEnumerable<IGrouping<string, IBrickOrder>> OrderGroups { get; set; } = Enumerable.Empty<IGrouping<string, IBrickOrder>>();
+        private static readonly CultureInfo EnGbCulture = CultureInfo.GetCultureInfo("en-GB");
+
+        // Backing fields for cached/materialized data
+        private List<IBrickOrder> _allOrders = new();
+        private Dictionary<long, IBrick> _brickById = new();
+        private Dictionary<long, List<IBrickOrderReceived>> _allReceivedByOrderLine = new();
+        private List<IGrouping<string, IBrickOrder>> _orderGroups = new();
+        private List<IBrickOrder> _selectedOrderLines = new();
+        private UserRole _currentUserRole;
+
+        // Cached aggregates for selected order (invalidated when selection changes)
+        private List<IBrickOrder>? _sortedSelectedOrderLines;
+        private DateTime? _selectedOrderFirstOrderedDate;
+        private DateTime? _selectedOrderLastExpectedDate;
+        private int? _selectedOrderTotalOrdered;
+        private int? _selectedOrderTotalReceived;
+
+        public IEnumerable<IBrickOrder> AllOrders => _allOrders;
+        public IEnumerable<IBrick> Bricks => _brickById.Values;
+        public IEnumerable<IGrouping<string, IBrickOrder>> OrderGroups => _orderGroups;
         public string? SelectedOrderNo { get; set; }
-        public IEnumerable<IBrickOrder> SelectedOrderLines { get; set; } = Enumerable.Empty<IBrickOrder>();
+        public IEnumerable<IBrickOrder> SelectedOrderLines => _selectedOrderLines;
         public Dictionary<long, IEnumerable<IBrickOrderReceived>> ReceivedByOrderLine { get; set; } = new();
         public Dictionary<long, bool> ExpandedRows { get; set; } = new();
 
@@ -37,6 +55,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public EditBrickOrder? EditOrderModel { get; set; }
         public NewBrickOrderReceived NewReceivedModel { get; set; } = new();
         public EditBrickOrderReceived? EditReceivedModel { get; set; }
+        public long? EditReceivedBrickOrderId { get; set; }
 
         public bool IsLoading { get; set; }
         public bool ShowAddOrderModal { get; set; }
@@ -51,34 +70,177 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
 
         public List<string> ValidationErrors { get; set; } = new();
         public string? ErrorMessage { get; set; }
+        public string OrderGroupsSearchTerm { get; set; } = string.Empty;
+        public string ReceivedSearchTerm { get; set; } = string.Empty;
+        public string AddBrickComboText { get; set; } = string.Empty;
+        public string EditBrickComboText { get; set; } = string.Empty;
+        public bool IsAddBrickSearchActive { get; set; }
+        public bool IsEditBrickSearchActive { get; set; }
+        public int AddBrickHighlightedIndex { get; private set; } = -1;
+        public int EditBrickHighlightedIndex { get; private set; } = -1;
+        public string? AddOrderDateValidationMessage { get; private set; }
+        public string? EditOrderDateValidationMessage { get; private set; }
+        public bool CanSubmitAddOrder => string.IsNullOrWhiteSpace(AddOrderDateValidationMessage);
+        public bool CanSubmitEditOrder => string.IsNullOrWhiteSpace(EditOrderDateValidationMessage);
 
-        public UserRole CurrentUserRole => _authService.CurrentUser != null
-            ? RoleHelper.GetRole(_authService.CurrentUser)
-            : UserRole.Standard;
+        public UserRole CurrentUserRole => _currentUserRole;
+
+        public IEnumerable<IGrouping<string, IBrickOrder>> FilteredOrderGroups
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(OrderGroupsSearchTerm))
+                {
+                    return _orderGroups.OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
+                }
+
+                return _orderGroups
+                    .Where(group =>
+                    {
+                        var first = group.First();
+                        return group.Key.Contains(OrderGroupsSearchTerm, StringComparison.OrdinalIgnoreCase)
+                            || group.Count().ToString().Contains(OrderGroupsSearchTerm, StringComparison.OrdinalIgnoreCase)
+                            || first.OrderedDate.ToString("dd/MM/yyyy").Contains(OrderGroupsSearchTerm, StringComparison.OrdinalIgnoreCase);
+                    })
+                    .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        public IEnumerable<IBrick> FilteredAddBrickOptions =>
+            FilterBrickOptions(AddBrickComboText);
+
+        public IEnumerable<IBrick> FilteredEditBrickOptions =>
+            FilterBrickOptions(EditBrickComboText);
+
+        public IEnumerable<IBrickOrder> SortedSelectedOrderLines =>
+            _sortedSelectedOrderLines ??= _selectedOrderLines
+                .OrderBy(GetOrderLineSortBucket)
+                .ThenByDescending(GetOrderLineSortDate)
+                .ThenByDescending(l => l.OrderedDate)
+                .ThenBy(l => l.Id)
+                .ToList();
+
+        public DateTime? SelectedOrderFirstOrderedDate =>
+            _selectedOrderFirstOrderedDate ??= _selectedOrderLines.Count > 0
+                ? _selectedOrderLines.Min(line => line.OrderedDate.Date)
+                : null;
+
+        public DateTime? SelectedOrderLastExpectedDate =>
+            _selectedOrderLastExpectedDate ??= _selectedOrderLines.Count > 0
+                ? _selectedOrderLines.Max(line => line.ExpectedDate.Date)
+                : null;
+
+        public int SelectedOrderTotalOrdered =>
+            _selectedOrderTotalOrdered ??= _selectedOrderLines.Sum(line => line.BricksOrdered);
+
+        public int SelectedOrderTotalReceived =>
+            _selectedOrderTotalReceived ??= _selectedOrderLines.Sum(line => Math.Min(line.BricksOrdered, GetTotalReceived(line)));
+
+        public decimal SelectedOrderFulfillmentPercentage
+        {
+            get
+            {
+                if (SelectedOrderTotalOrdered <= 0 || SelectedOrderTotalReceived <= 0)
+                {
+                    return 0;
+                }
+
+                return Math.Min(100, Math.Round((decimal)SelectedOrderTotalReceived / SelectedOrderTotalOrdered * 100, 1));
+            }
+        }
 
         public long CurrentUserId => _authService.CurrentUser?.Id ?? 0;
+        public DateTime Today => DateTime.Now.ToUkTime();
+        public DateTime TodayDate => Today.Date;
+        public string TodayInputValue => Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+        public string AddOrderMinExpectedDateInputValue =>
+            NewOrderModel.OrderedDate.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+        public string? EditOrderMinExpectedDateInputValue =>
+            EditOrderModel?.OrderedDate.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
         public async Task LoadOrders()
         {
             IsLoading = true;
-            AllOrders = await _ordersMediator.GetAllBrickOrders();
-            Bricks = await _bricksMediator.GetAllBricks();
-            OrderGroups = AllOrders.GroupBy(o => o.OrderNo);
+            _currentUserRole = _authService.CurrentUser != null
+                ? RoleHelper.GetRole(_authService.CurrentUser)
+                : UserRole.Standard;
+
+            var ordersTask = _ordersMediator.GetAllBrickOrders();
+            var bricksTask = _bricksMediator.GetAllBricks();
+            var receivedTask = _receivedMediator.GetAllBrickOrdersReceived();
+            await Task.WhenAll(ordersTask, bricksTask, receivedTask);
+
+            _allOrders = (await ordersTask).ToList();
+            _brickById = (await bricksTask).ToDictionary(b => b.Id);
+            _allReceivedByOrderLine = (await receivedTask)
+                .GroupBy(r => r.BrickOrderId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+            _orderGroups = _allOrders.GroupBy(o => o.OrderNo).ToList();
             IsLoading = false;
+        }
+
+        /// <summary>
+        /// Synchronously applies the selection so the UI can render immediately.
+        /// Call <see cref="LoadSelectedOrderReceivedAsync"/> afterwards to populate received items.
+        /// </summary>
+        public void ApplyOrderGroupSelection(string orderNo)
+        {
+            var previousSelectedOrderNo = SelectedOrderNo;
+            var previouslyExpandedLineIds = ExpandedRows
+                .Where(kvp => kvp.Value)
+                .Select(kvp => kvp.Key)
+                .ToHashSet();
+
+            SelectedOrderNo = orderNo;
+            _selectedOrderLines = _allOrders.Where(o => o.OrderNo == orderNo).ToList();
+            ReceivedByOrderLine.Clear();
+
+            if (string.Equals(previousSelectedOrderNo, orderNo, StringComparison.Ordinal))
+            {
+                ExpandedRows = _selectedOrderLines
+                    .Where(line => previouslyExpandedLineIds.Contains(line.Id))
+                    .ToDictionary(line => line.Id, _ => true);
+            }
+            else
+            {
+                ExpandedRows.Clear();
+            }
+
+            InvalidateSelectionCache();
+        }
+
+        /// <summary>
+        /// Populates ReceivedByOrderLine for the currently selected lines from the in-memory cache.
+        /// Returns immediately — no DB calls.
+        /// </summary>
+        public Task LoadSelectedOrderReceivedAsync()
+        {
+            foreach (var line in _selectedOrderLines)
+            {
+                ReceivedByOrderLine[line.Id] = _allReceivedByOrderLine.TryGetValue(line.Id, out var items)
+                    ? items
+                    : [];
+            }
+
+            _selectedOrderTotalReceived = null;
+            return Task.CompletedTask;
         }
 
         public async Task SelectOrderGroup(string orderNo)
         {
-            SelectedOrderNo = orderNo;
-            SelectedOrderLines = AllOrders.Where(o => o.OrderNo == orderNo);
-            ReceivedByOrderLine.Clear();
-            ExpandedRows.Clear();
+            ApplyOrderGroupSelection(orderNo);
+            await LoadSelectedOrderReceivedAsync();
+        }
 
-            foreach (var line in SelectedOrderLines)
-            {
-                var received = await _receivedMediator.GetBrickOrdersReceivedByBrickOrderId(line.Id);
-                ReceivedByOrderLine[line.Id] = received;
-            }
+        private void InvalidateSelectionCache()
+        {
+            _sortedSelectedOrderLines = null;
+            _selectedOrderFirstOrderedDate = null;
+            _selectedOrderLastExpectedDate = null;
+            _selectedOrderTotalOrdered = null;
+            _selectedOrderTotalReceived = null;
         }
 
         public void ToggleRowExpansion(long orderLineId)
@@ -94,27 +256,203 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
 
         public decimal GetFulfillmentPercentage(IBrickOrder orderLine)
         {
-            if (orderLine.BricksOrdered <= 0) return 0;
-            if (!ReceivedByOrderLine.TryGetValue(orderLine.Id, out var received)) return 0;
-            var totalReceived = received.Sum(r => r.BricksReceived);
+            ArgumentNullException.ThrowIfNull(orderLine);
+
+            if (orderLine.BricksOrdered <= 0)
+            {
+                return 0;
+            }
+
+            var totalReceived = GetTotalReceived(orderLine);
+            if (totalReceived <= 0)
+            {
+                return 0;
+            }
+
             return Math.Min(100, Math.Round((decimal)totalReceived / orderLine.BricksOrdered * 100, 1));
         }
 
         public int GetTotalReceived(IBrickOrder orderLine)
         {
-            if (!ReceivedByOrderLine.TryGetValue(orderLine.Id, out var received)) return 0;
+            ArgumentNullException.ThrowIfNull(orderLine);
+
+            if (!ReceivedByOrderLine.TryGetValue(orderLine.Id, out var received))
+            {
+                return 0;
+            }
+
             return received.Sum(r => r.BricksReceived);
         }
 
+        public bool HasReceivedItems(long orderLineId)
+        {
+            if (!ReceivedByOrderLine.TryGetValue(orderLineId, out var received)) return false;
+            return received.Any();
+        }
+
+        public bool IsOrderFullyReceived(IBrickOrder orderLine)
+        {
+            ArgumentNullException.ThrowIfNull(orderLine);
+
+            return orderLine.BricksOrdered > 0 && GetTotalReceived(orderLine) >= orderLine.BricksOrdered;
+        }
+
+        public bool IsOrderDueToday(IBrickOrder orderLine)
+        {
+            ArgumentNullException.ThrowIfNull(orderLine);
+
+            return orderLine.CancelledDate == null
+                && !IsOrderFullyReceived(orderLine)
+                && orderLine.ExpectedDate.Date == TodayDate;
+        }
+
+        public bool IsOrderOverdue(IBrickOrder orderLine)
+        {
+            ArgumentNullException.ThrowIfNull(orderLine);
+
+            return orderLine.CancelledDate == null
+                && !IsOrderFullyReceived(orderLine)
+                && orderLine.ExpectedDate.Date < TodayDate;
+        }
+
+        public bool CanToggleCancellation(IBrickOrder orderLine) =>
+            RoleHelper.CanEdit(CurrentUserRole) && !HasReceivedItems(orderLine.Id);
+
+        public string GetOrderLineStateClass(IBrickOrder orderLine)
+        {
+            ArgumentNullException.ThrowIfNull(orderLine);
+
+            if (orderLine.CancelledDate != null)
+            {
+                return "order-line-card-cancelled";
+            }
+
+            if (IsOrderDueToday(orderLine))
+            {
+                return "order-line-card-due-today";
+            }
+
+            if (IsOrderOverdue(orderLine))
+            {
+                return "order-line-card-overdue";
+            }
+
+            if (IsOrderFullyReceived(orderLine))
+            {
+                return "order-line-card-fulfilled";
+            }
+
+            return string.Empty;
+        }
+
+        public string? GetOrderLineStatusText(IBrickOrder orderLine)
+        {
+            ArgumentNullException.ThrowIfNull(orderLine);
+
+            if (orderLine.CancelledDate != null)
+            {
+                return "Cancelled";
+            }
+
+            if (IsOrderDueToday(orderLine))
+            {
+                return "Due today";
+            }
+
+            if (IsOrderOverdue(orderLine))
+            {
+                return "Overdue";
+            }
+
+            if (IsOrderFullyReceived(orderLine))
+            {
+                return "Fully received";
+            }
+
+            return null;
+        }
+
+        private int GetOrderLineSortBucket(IBrickOrder orderLine)
+        {
+            ArgumentNullException.ThrowIfNull(orderLine);
+
+            if (orderLine.CancelledDate != null)
+            {
+                return 4;
+            }
+
+            if (IsOrderDueToday(orderLine))
+            {
+                return 0;
+            }
+
+            if (IsOrderOverdue(orderLine))
+            {
+                return 1;
+            }
+
+            if (IsOrderFullyReceived(orderLine))
+            {
+                return 3;
+            }
+
+            return 2;
+        }
+
+        private DateTime GetOrderLineSortDate(IBrickOrder orderLine)
+        {
+            ArgumentNullException.ThrowIfNull(orderLine);
+
+            return orderLine.CancelledDate?.Date
+                ?? orderLine.ExpectedDate.Date;
+        }
+
+        public async Task<bool> ToggleOrderCancellation(IBrickOrder orderLine)
+        {
+            ArgumentNullException.ThrowIfNull(orderLine);
+
+            IsLoading = true;
+
+            if (orderLine.CancelledDate == null)
+            {
+                    await _ordersMediator.Cancel(orderLine.Id);
+                    }
+                    else
+                    {
+                        await _ordersMediator.Uncancel(orderLine.Id);
+                    }
+
+                    await LoadOrders();
+                    if (SelectedOrderNo != null) await SelectOrderGroup(SelectedOrderNo);
+                    IsLoading = false;
+                    return true;
+                }
+
+        public IEnumerable<IBrickOrderReceived> FilterReceivedItems(IEnumerable<IBrickOrderReceived> receivedItems) =>
+            receivedItems.Where(rcv =>
+                string.IsNullOrWhiteSpace(ReceivedSearchTerm)
+                || rcv.BricksReceived.ToString().Contains(ReceivedSearchTerm, StringComparison.OrdinalIgnoreCase)
+                || rcv.ReceivedDate.ToString("dd/MM/yyyy").Contains(ReceivedSearchTerm, StringComparison.OrdinalIgnoreCase)
+                || $"{rcv.ReceivedBy.FirstName} {rcv.ReceivedBy.LastName}".Contains(ReceivedSearchTerm, StringComparison.OrdinalIgnoreCase));
         // Order CRUD
         public void OpenAddOrderModal()
         {
+            OpenAddOrderModal(null);
+        }
+
+        public void OpenAddOrderModal(string? orderNo)
+        {
             NewOrderModel = new NewBrickOrder
             {
-                OrderedDate = DateTime.UtcNow,
-                ExpectedDate = DateTime.UtcNow.AddDays(14),
+                OrderNo = orderNo ?? string.Empty,
+                OrderedDate = Today,
+                ExpectedDate = Today.AddDays(14),
                 CreatedById = CurrentUserId
             };
+            AddBrickComboText = string.Empty;
+            IsAddBrickSearchActive = false;
+            AddBrickHighlightedIndex = -1;
+            AddOrderDateValidationMessage = null;
             ValidationErrors.Clear();
             ShowAddOrderModal = true;
         }
@@ -122,6 +460,9 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public void CloseAddOrderModal()
         {
             ShowAddOrderModal = false;
+            IsAddBrickSearchActive = false;
+            AddBrickHighlightedIndex = -1;
+            AddOrderDateValidationMessage = null;
             ValidationErrors.Clear();
         }
 
@@ -129,17 +470,24 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         {
             ValidationErrors.Clear();
             NewOrderModel.CreatedById = CurrentUserId;
+            ValidateAddOrderDates();
             var errors = InputValidator.ValidateBrickOrder(NewOrderModel);
+            errors.AddRange(ValidateOrderDates(NewOrderModel.OrderedDate, NewOrderModel.ExpectedDate));
+            if (!string.IsNullOrWhiteSpace(AddOrderDateValidationMessage))
+            {
+                errors.Add(AddOrderDateValidationMessage);
+            }
+
             if (errors.Count > 0)
             {
-                ValidationErrors = errors;
+                ValidationErrors = errors.Distinct(StringComparer.Ordinal).ToList();
                 return false;
             }
 
             IsLoading = true;
-            await _ordersMediator.Insert(NewOrderModel);
+            var createdOrder = await _ordersMediator.Insert(NewOrderModel);
             await LoadOrders();
-            if (SelectedOrderNo != null) await SelectOrderGroup(SelectedOrderNo);
+            await SelectOrderGroup(createdOrder.OrderNo);
             ShowAddOrderModal = false;
             IsLoading = false;
             return true;
@@ -148,6 +496,10 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public void OpenEditOrderModal(IBrickOrder order)
         {
             EditOrderModel = new EditBrickOrder(order);
+            EditBrickComboText = GetBrickName(order.BrickId);
+            IsEditBrickSearchActive = false;
+            EditBrickHighlightedIndex = -1;
+            EditOrderDateValidationMessage = null;
             ValidationErrors.Clear();
             ShowEditOrderModal = true;
         }
@@ -155,6 +507,9 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public void CloseEditOrderModal()
         {
             ShowEditOrderModal = false;
+            IsEditBrickSearchActive = false;
+            EditBrickHighlightedIndex = -1;
+            EditOrderDateValidationMessage = null;
             ValidationErrors.Clear();
         }
 
@@ -163,17 +518,24 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             if (EditOrderModel == null) return false;
 
             ValidationErrors.Clear();
+            ValidateEditOrderDates();
             var errors = InputValidator.ValidateBrickOrder(EditOrderModel);
+            errors.AddRange(ValidateOrderDates(EditOrderModel.OrderedDate, EditOrderModel.ExpectedDate));
+            if (!string.IsNullOrWhiteSpace(EditOrderDateValidationMessage))
+            {
+                errors.Add(EditOrderDateValidationMessage);
+            }
+
             if (errors.Count > 0)
             {
-                ValidationErrors = errors;
+                ValidationErrors = errors.Distinct(StringComparer.Ordinal).ToList();
                 return false;
             }
 
             IsLoading = true;
-            await _ordersMediator.Update(EditOrderModel);
+            var updatedOrder = await _ordersMediator.Update(EditOrderModel);
             await LoadOrders();
-            if (SelectedOrderNo != null) await SelectOrderGroup(SelectedOrderNo);
+            await SelectOrderGroup(updatedOrder.OrderNo);
             ShowEditOrderModal = false;
             IsLoading = false;
             return true;
@@ -198,11 +560,13 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
 
             IsLoading = true;
 
-            // Delete child received records first
-            var received = await _receivedMediator.GetBrickOrdersReceivedByBrickOrderId(OrderToDelete.Id);
-            foreach (var r in received)
+            // Use the in-memory cache to find child received records — no extra DB call needed
+            if (_allReceivedByOrderLine.TryGetValue(OrderToDelete.Id, out var received))
             {
-                await _receivedMediator.Delete(r.Id);
+                foreach (var r in received)
+                {
+                    await _receivedMediator.Delete(r.Id);
+                }
             }
 
             await _ordersMediator.Delete(OrderToDelete.Id);
@@ -238,6 +602,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             ValidationErrors.Clear();
             NewReceivedModel.ReceivedById = CurrentUserId;
             var errors = InputValidator.ValidateBrickOrderReceived(NewReceivedModel);
+            errors.AddRange(ValidateReceivedDate(NewReceivedModel.BrickOrderId, NewReceivedModel.ReceivedDate));
             if (errors.Count > 0)
             {
                 ValidationErrors = errors;
@@ -256,6 +621,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public void OpenEditReceivedModal(IBrickOrderReceived received)
         {
             EditReceivedModel = new EditBrickOrderReceived(received);
+            EditReceivedBrickOrderId = received.BrickOrderId;
             ValidationErrors.Clear();
             ShowEditReceivedModal = true;
         }
@@ -263,6 +629,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public void CloseEditReceivedModal()
         {
             ShowEditReceivedModal = false;
+            EditReceivedBrickOrderId = null;
             ValidationErrors.Clear();
         }
 
@@ -272,17 +639,34 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
 
             ValidationErrors.Clear();
             var errors = InputValidator.ValidateBrickOrderReceived(EditReceivedModel);
+            if (EditReceivedBrickOrderId.HasValue)
+            {
+                errors.AddRange(ValidateReceivedDate(EditReceivedBrickOrderId.Value, EditReceivedModel.ReceivedDate));
+            }
+
             if (errors.Count > 0)
             {
                 ValidationErrors = errors;
                 return false;
             }
 
+            var updatedOrderLineId = EditReceivedBrickOrderId;
+            var wasExpanded = updatedOrderLineId.HasValue && IsRowExpanded(updatedOrderLineId.Value);
+
             IsLoading = true;
             await _receivedMediator.Update(EditReceivedModel);
             await LoadOrders();
-            if (SelectedOrderNo != null) await SelectOrderGroup(SelectedOrderNo);
+            if (SelectedOrderNo != null)
+            {
+                await SelectOrderGroup(SelectedOrderNo);
+
+                if (wasExpanded && updatedOrderLineId.HasValue)
+                {
+                    ExpandedRows[updatedOrderLineId.Value] = true;
+                }
+            }
             ShowEditReceivedModal = false;
+            EditReceivedBrickOrderId = null;
             IsLoading = false;
             return true;
         }
@@ -312,6 +696,165 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             return true;
         }
 
-        public string FormatPrice(decimal price) => price.ToString("C2", System.Globalization.CultureInfo.GetCultureInfo("en-GB"));
+        public void ValidateAddOrderDates()
+        {
+            AddOrderDateValidationMessage = BuildOrderDateValidationMessage(NewOrderModel.OrderedDate, NewOrderModel.ExpectedDate);
+        }
+
+        public void ValidateEditOrderDates()
+        {
+            if (EditOrderModel == null)
+            {
+                EditOrderDateValidationMessage = null;
+                return;
+            }
+
+            EditOrderDateValidationMessage = BuildOrderDateValidationMessage(EditOrderModel.OrderedDate, EditOrderModel.ExpectedDate);
+        }
+
+        static string? BuildOrderDateValidationMessage(DateTime orderedDate, DateTime expectedDate)
+        {
+            return expectedDate.Date < orderedDate.Date
+                ? "Expected date cannot be before the order date."
+                : null;
+        }
+
+        private List<string> ValidateOrderDates(DateTime orderedDate, DateTime expectedDate)
+        {
+            var errors = new List<string>();
+
+            if (orderedDate.Date > TodayDate)
+            {
+                errors.Add("Order date cannot be greater than today.");
+            }
+
+            if (expectedDate.Date < orderedDate.Date)
+            {
+                errors.Add("Expected date cannot be before the order date.");
+            }
+
+            return errors;
+        }
+
+        private List<string> ValidateReceivedDate(long brickOrderId, DateTime receivedDate)
+        {
+            var errors = new List<string>();
+            var orderLine = AllOrders.FirstOrDefault(order => order.Id == brickOrderId);
+
+            if (orderLine != null && receivedDate.Date < orderLine.OrderedDate.Date)
+            {
+                errors.Add("Received date cannot be less than the order date.");
+            }
+
+            return errors;
+        }
+
+        public void SetAddBrickFromText(string? value)
+        {
+            AddBrickComboText = value?.Trim() ?? string.Empty;
+            NewOrderModel.BrickId = ResolveBrickId(AddBrickComboText);
+            AddBrickHighlightedIndex = -1;
+        }
+
+        public void SetEditBrickFromText(string? value)
+        {
+            if (EditOrderModel == null) return;
+
+            EditBrickComboText = value?.Trim() ?? string.Empty;
+            EditOrderModel.BrickId = ResolveBrickId(EditBrickComboText);
+            EditBrickHighlightedIndex = -1;
+        }
+
+        IEnumerable<IBrick> FilterBrickOptions(string? searchText)
+        {
+            if (string.IsNullOrWhiteSpace(searchText))
+            {
+                return Bricks.OrderBy(b => b.Name, StringComparer.OrdinalIgnoreCase);
+            }
+
+            return Bricks
+                .Where(b => b.Name.Contains(searchText.Trim(), StringComparison.OrdinalIgnoreCase))
+                .OrderBy(b => b.Name, StringComparer.OrdinalIgnoreCase);
+        }
+
+        long ResolveBrickId(string? brickName)
+        {
+            if (string.IsNullOrWhiteSpace(brickName)) return 0;
+
+            var brick = Bricks.FirstOrDefault(b =>
+                string.Equals(b.Name, brickName.Trim(), StringComparison.OrdinalIgnoreCase));
+            return brick?.Id ?? 0;
+        }
+
+        string GetBrickName(long brickId)
+        {
+            return GetBrick(brickId)?.Name ?? string.Empty;
+        }
+
+        public void MoveAddBrickHighlight(int direction)
+        {
+            var options = FilteredAddBrickOptions.ToList();
+            if (options.Count == 0)
+            {
+                AddBrickHighlightedIndex = -1;
+                return;
+            }
+
+            if (AddBrickHighlightedIndex < 0)
+            {
+                AddBrickHighlightedIndex = direction > 0 ? 0 : options.Count - 1;
+                return;
+            }
+
+            AddBrickHighlightedIndex = (AddBrickHighlightedIndex + direction + options.Count) % options.Count;
+        }
+
+        public void MoveEditBrickHighlight(int direction)
+        {
+            var options = FilteredEditBrickOptions.ToList();
+            if (options.Count == 0)
+            {
+                EditBrickHighlightedIndex = -1;
+                return;
+            }
+
+            if (EditBrickHighlightedIndex < 0)
+            {
+                EditBrickHighlightedIndex = direction > 0 ? 0 : options.Count - 1;
+                return;
+            }
+
+            EditBrickHighlightedIndex = (EditBrickHighlightedIndex + direction + options.Count) % options.Count;
+        }
+
+        public bool SelectHighlightedAddBrick()
+        {
+            var options = FilteredAddBrickOptions.ToList();
+            if (AddBrickHighlightedIndex < 0 || AddBrickHighlightedIndex >= options.Count)
+            {
+                return false;
+            }
+
+            SetAddBrickFromText(options[AddBrickHighlightedIndex].Name);
+            return true;
+        }
+
+        public bool SelectHighlightedEditBrick()
+        {
+            var options = FilteredEditBrickOptions.ToList();
+            if (EditBrickHighlightedIndex < 0 || EditBrickHighlightedIndex >= options.Count)
+            {
+                return false;
+            }
+
+            SetEditBrickFromText(options[EditBrickHighlightedIndex].Name);
+            return true;
+        }
+
+        public string FormatPrice(decimal price) => price.ToString("C2", EnGbCulture);
+
+        /// <summary>Returns the brick for the given id in O(1), or null if not found.</summary>
+        public IBrick? GetBrick(long brickId) =>
+            _brickById.TryGetValue(brickId, out var brick) ? brick : null;
     }
 }

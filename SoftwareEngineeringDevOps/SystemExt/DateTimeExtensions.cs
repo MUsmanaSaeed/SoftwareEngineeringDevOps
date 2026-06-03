@@ -1,6 +1,6 @@
 ﻿namespace System
 {
-    public static class DateTimeExtentions
+    public static class DateTimeExtensions
     {
         private static readonly TimeZoneInfo UkTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/London");
         public static DateTime ToUkTime(this DateTime dateTime)

@@ -5,7 +5,7 @@ CREATE TABLE bricks(
   price numeric(10, 2) not null default 0,
   colour text not null,
   material text not null,
-  strength numeric(4,1) not null default 0,
+  strength numeric(8,4) not null default 0,
   width numeric(6,1) not null default 0,
   height numeric(6,1) not null default 0,
   depth numeric(6,1) not null default 0,

@@ -4,6 +4,47 @@
 
 <PageTitle>Home</PageTitle>
 
-<h1>Welcome</h1>
-<p>Welcome to the ACS Brick Management System, @AuthService.CurrentUser?.FirstName.</p>
+<div class="home-page">
+    <div class="home-hero">
+        <div class="home-hero-icon">&#xE80F;</div>
+        <h1 class="home-title">Welcome back, @AuthService.CurrentUser?.FirstName!</h1>
+        <p class="home-subtitle">ACS Brick Management System</p>
+    </div>
+
+    <div class="home-cards">
+        @if (AuthService.CurrentUser?.IsAdmin == true)
+        {
+            <button class="home-card home-card--admin" @onclick='() => Navigation.NavigateTo("/users")'>
+                <span class="home-card-icon">&#xE77B;</span>
+                <span class="home-card-title">Users</span>
+                <span class="home-card-desc">Add and manage user accounts and roles.</span>
+            </button>
+        }
+
+        <button class="home-card" @onclick='() => Navigation.NavigateTo("/manufacturers")'>
+            <span class="home-card-icon">&#xE731;</span>
+            <span class="home-card-title">Manufacturers</span>
+            <span class="home-card-desc">Manage brick suppliers and their contact details.</span>
+        </button>
+
+        <button class="home-card" @onclick='() => Navigation.NavigateTo("/bricks")'>
+            <span class="home-card-icon">&#xECA5;</span>
+            <span class="home-card-title">Bricks</span>
+            <span class="home-card-desc">Browse and manage the brick catalogue.</span>
+        </button>
+
+        <button class="home-card" @onclick='() => Navigation.NavigateTo("/orders")'>
+            <span class="home-card-icon">&#xE719;</span>
+            <span class="home-card-title">Orders</span>
+            <span class="home-card-desc">Track and manage brick orders and delivery progress.</span>
+        </button>
+    </div>
+</div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthService.GetCurrentUserAsync();
+    }
+}
 

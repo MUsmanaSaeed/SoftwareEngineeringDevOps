@@ -25,24 +25,23 @@ namespace Migrator
         private static void EnsureDatabaseExists()
         {
             NpgsqlConnectionStringBuilder connectionString = EnvironmentVariables.DB;
-            string requiredDatabaseName = connectionString.Database;
+            string? requiredDatabaseName = connectionString.Database;
             //connectionString.Database = null;
 
-            using (NpgsqlConnection con = new NpgsqlConnection(connectionString.ToString()))
+            using (NpgsqlConnection con = new(connectionString.ToString()))
             {
                 con.Open();
                 bool isDatabaseExisting = false;
 
-                using (NpgsqlCommand command = new NpgsqlCommand($"SELECT 1 AS result FROM pg_database WHERE datname = '{requiredDatabaseName}'", con))
+                using (NpgsqlCommand command = new($"SELECT 1 AS result FROM pg_database WHERE datname = '{requiredDatabaseName}'", con))
                 {
-                    object result = command.ExecuteScalar();
+                    object? result = command.ExecuteScalar();
                     isDatabaseExisting = result != null;
                 }
 
                 if (!isDatabaseExisting)
                 {
-                    using (NpgsqlCommand command =
-                        new NpgsqlCommand($"CREATE DATABASE \"{requiredDatabaseName}\"", con))
+                    using (NpgsqlCommand command = new($"CREATE DATABASE \"{requiredDatabaseName}\"", con))
                     {
                         command.ExecuteNonQuery();
                     }
@@ -53,7 +52,7 @@ namespace Migrator
         /// <summary>
         /// Configure the dependency injection services
         /// </sumamry>
-        private static IServiceProvider CreateServices()
+        static IServiceProvider CreateServices()
         {
             return new ServiceCollection()
                 // Add common FluentMigrator services
@@ -81,7 +80,7 @@ namespace Migrator
         /// <summary>
         /// Update the database
         /// </summary>
-        private static void UpdateDatabase(IServiceProvider serviceProvider)
+        static void UpdateDatabase(IServiceProvider serviceProvider)
         {
             // Instantiate the runner
             IMigrationRunner runner = serviceProvider.GetRequiredService<IMigrationRunner>();

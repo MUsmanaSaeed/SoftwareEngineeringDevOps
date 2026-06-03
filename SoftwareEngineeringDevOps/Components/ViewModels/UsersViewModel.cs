@@ -31,6 +31,15 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             : UserRole.Standard;
 
         public long CurrentUserId => _authService.CurrentUser?.Id ?? 0;
+        public string UsersSearchTerm { get; set; } = string.Empty;
+
+        public IEnumerable<IUser> FilteredUsers =>
+            Users.Where(user =>
+                string.IsNullOrWhiteSpace(UsersSearchTerm)
+                || user.Username.Contains(UsersSearchTerm, StringComparison.OrdinalIgnoreCase)
+                || $"{user.FirstName} {user.LastName}".Contains(UsersSearchTerm, StringComparison.OrdinalIgnoreCase)
+                || (user.IsAdmin ? "Admin" : user.IsEditor ? "Editor" : "Standard").Contains(UsersSearchTerm, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(user => user.Username, StringComparer.OrdinalIgnoreCase);
 
         public async Task LoadUsers()
         {
@@ -60,10 +69,16 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public async Task<bool> AddUser()
         {
             ValidationErrors.Clear();
-            var errors = InputValidator.ValidateUser(NewUserModel);
+            var errors = InputValidator.ValidateUser(NewUserModel, requireLastName: false, requireStrongPassword: false);
             if (errors.Count > 0)
             {
                 ValidationErrors = errors;
+                return false;
+            }
+
+            if (Users.Any(u => u.Username.Equals(NewUserModel.Username, StringComparison.OrdinalIgnoreCase)))
+            {
+                ValidationErrors.Add("A user with that username already exists.");
                 return false;
             }
 
@@ -93,10 +108,16 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             if (EditUserModel == null) return false;
 
             ValidationErrors.Clear();
-            var errors = InputValidator.ValidateUser(EditUserModel);
+            var errors = InputValidator.ValidateUser(EditUserModel, requireLastName: false, requireStrongPassword: false);
             if (errors.Count > 0)
             {
                 ValidationErrors = errors;
+                return false;
+            }
+
+            if (Users.Any(u => u.Id != EditUserModel.Id && u.Username.Equals(EditUserModel.Username, StringComparison.OrdinalIgnoreCase)))
+            {
+                ValidationErrors.Add("A user with that username already exists.");
                 return false;
             }
 

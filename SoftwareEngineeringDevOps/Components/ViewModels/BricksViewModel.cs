@@ -38,6 +38,23 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public List<string> ValidationErrors { get; set; } = new();
         public string? ErrorMessage { get; set; }
         public string ManufacturerSearch { get; set; } = string.Empty;
+        public string AddManufacturerComboText { get; set; } = string.Empty;
+        public string EditManufacturerComboText { get; set; } = string.Empty;
+        public bool IsAddManufacturerSearchActive { get; set; }
+        public bool IsEditManufacturerSearchActive { get; set; }
+        public string BricksSearchTerm { get; set; } = string.Empty;
+        public string BrickOrdersSearchTerm { get; set; } = string.Empty;
+        public string? AddBrickNameValidationMessage { get; private set; }
+        public string? EditBrickNameValidationMessage { get; private set; }
+        public string? AddNumericValidationMessage { get; private set; }
+        public string? EditNumericValidationMessage { get; private set; }
+        public bool HasAddBrickNameConflict => !string.IsNullOrWhiteSpace(AddBrickNameValidationMessage);
+        public bool HasEditBrickNameConflict => !string.IsNullOrWhiteSpace(EditBrickNameValidationMessage);
+        public bool HasAddNumericInputError => !string.IsNullOrWhiteSpace(AddNumericValidationMessage);
+        public bool HasEditNumericInputError => !string.IsNullOrWhiteSpace(EditNumericValidationMessage);
+        public bool CanSubmitAddBrick => !HasAddBrickNameConflict && !HasAddNumericInputError;
+        public bool CanSubmitEditBrick => !HasEditBrickNameConflict && !HasEditNumericInputError;
+        public decimal MaxDimensionLimit => 10000m;
 
         public UserRole CurrentUserRole => _authService.CurrentUser != null
             ? RoleHelper.GetRole(_authService.CurrentUser)
@@ -47,6 +64,27 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             string.IsNullOrWhiteSpace(ManufacturerSearch)
                 ? Manufacturers
                 : Manufacturers.Where(m => m.Name.Contains(ManufacturerSearch, StringComparison.OrdinalIgnoreCase));
+
+        public IEnumerable<IManufacturer> FilteredAddManufacturerOptions =>
+            FilterManufacturerOptions(AddManufacturerComboText);
+
+        public IEnumerable<IManufacturer> FilteredEditManufacturerOptions =>
+            FilterManufacturerOptions(EditManufacturerComboText);
+
+        public IEnumerable<IBrick> FilteredBricks =>
+            Bricks.Where(brick =>
+                string.IsNullOrWhiteSpace(BricksSearchTerm)
+                || brick.Name.Contains(BricksSearchTerm, StringComparison.OrdinalIgnoreCase)
+                || brick.Manufacturer.Name.Contains(BricksSearchTerm, StringComparison.OrdinalIgnoreCase)
+                || FormatPrice(brick.Price).Contains(BricksSearchTerm, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(brick => brick.Name, StringComparer.OrdinalIgnoreCase);
+
+        public IEnumerable<IBrickOrder> FilteredSelectedBrickOrders =>
+            SelectedBrickOrders.Where(order =>
+                string.IsNullOrWhiteSpace(BrickOrdersSearchTerm)
+                || order.OrderNo.Contains(BrickOrdersSearchTerm, StringComparison.OrdinalIgnoreCase)
+                || order.BricksOrdered.ToString().Contains(BrickOrdersSearchTerm, StringComparison.OrdinalIgnoreCase)
+                || order.OrderedDate.ToString("dd/MM/yyyy").Contains(BrickOrdersSearchTerm, StringComparison.OrdinalIgnoreCase));
 
         public async Task LoadBricks()
         {
@@ -75,6 +113,10 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         {
             NewBrickModel = new NewBrick();
             ManufacturerSearch = string.Empty;
+            AddManufacturerComboText = string.Empty;
+            IsAddManufacturerSearchActive = false;
+            AddBrickNameValidationMessage = null;
+            AddNumericValidationMessage = null;
             ValidationErrors.Clear();
             ShowAddModal = true;
         }
@@ -82,11 +124,15 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public void CloseAddModal()
         {
             ShowAddModal = false;
+            AddBrickNameValidationMessage = null;
+            AddNumericValidationMessage = null;
             ValidationErrors.Clear();
         }
 
         public async Task<bool> AddBrick()
         {
+            NormalizeNewBrickModel();
+            ValidateAddNumericInputs();
             ValidationErrors.Clear();
             var errors = InputValidator.ValidateBrick(NewBrickModel);
             if (errors.Count > 0)
@@ -95,9 +141,23 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
                 return false;
             }
 
+            if (HasAddNumericInputError)
+            {
+                ValidationErrors.Add(AddNumericValidationMessage!);
+                return false;
+            }
+
+            if (await BrickNameExists(NewBrickModel.Name))
+            {
+                AddBrickNameValidationMessage = "Name already exists. Please use a different brick name.";
+                ValidationErrors.Add(AddBrickNameValidationMessage);
+                return false;
+            }
+
             IsLoading = true;
-            await _bricksMediator.Insert(NewBrickModel);
+            var createdBrick = await _bricksMediator.Insert(NewBrickModel);
             await LoadBricks();
+            await SelectBrickById(createdBrick.Id);
             ShowAddModal = false;
             IsLoading = false;
             return true;
@@ -107,6 +167,10 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         {
             EditBrickModel = new EditBrick(brick);
             ManufacturerSearch = string.Empty;
+            EditManufacturerComboText = GetManufacturerName(brick.Manufacturer.Id);
+            IsEditManufacturerSearchActive = false;
+            EditBrickNameValidationMessage = null;
+            EditNumericValidationMessage = null;
             ValidationErrors.Clear();
             ShowEditModal = true;
         }
@@ -114,6 +178,8 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public void CloseEditModal()
         {
             ShowEditModal = false;
+            EditBrickNameValidationMessage = null;
+            EditNumericValidationMessage = null;
             ValidationErrors.Clear();
         }
 
@@ -121,6 +187,8 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         {
             if (EditBrickModel == null) return false;
 
+            NormalizeEditBrickModel();
+            ValidateEditNumericInputs();
             ValidationErrors.Clear();
             var errors = InputValidator.ValidateBrick(EditBrickModel);
             if (errors.Count > 0)
@@ -129,15 +197,24 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
                 return false;
             }
 
-            IsLoading = true;
-            await _bricksMediator.Update(EditBrickModel);
-            await LoadBricks();
-            ShowEditModal = false;
-
-            if (SelectedBrick?.Id == EditBrickModel.Id)
+            if (HasEditNumericInputError)
             {
-                SelectedBrick = await _bricksMediator.GetBrickById(EditBrickModel.Id);
+                ValidationErrors.Add(EditNumericValidationMessage!);
+                return false;
             }
+
+            if (await BrickNameExists(EditBrickModel.Name, EditBrickModel.Id))
+            {
+                EditBrickNameValidationMessage = "Name already exists. Please use a different brick name.";
+                ValidationErrors.Add(EditBrickNameValidationMessage);
+                return false;
+            }
+
+            IsLoading = true;
+            var updatedBrick = await _bricksMediator.Update(EditBrickModel);
+            await LoadBricks();
+            await SelectBrickById(updatedBrick.Id);
+            ShowEditModal = false;
             IsLoading = false;
             return true;
         }
@@ -184,5 +261,182 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         }
 
         public string FormatPrice(decimal price) => price.ToString("C2", System.Globalization.CultureInfo.GetCultureInfo("en-GB"));
+
+        public string FormatVoidsPercent(decimal voids) => $"{(voids * 100m):0.##}%";
+
+        public string VoidsPercentInputValue(decimal voids) => (voids * 100m).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+
+        public static decimal ParseVoidsPercentInput(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return 0m;
+            if (!decimal.TryParse(value, out var percent)) return 0m;
+
+            var normalizedPercent = Math.Clamp(percent, 0m, 100m);
+            return normalizedPercent / 100m;
+        }
+
+        public void ValidateAddBrickName()
+        {
+            AddBrickNameValidationMessage = BrickNameExistsInLoadedList(NewBrickModel.Name)
+                ? "Name already exists. Please use a different brick name."
+                : null;
+        }
+
+        public void ValidateAddNumericInputs()
+        {
+            AddNumericValidationMessage = BuildNumericInputValidationMessage(
+                NewBrickModel.Price,
+                NewBrickModel.Strength,
+                NewBrickModel.Width,
+                NewBrickModel.Height,
+                NewBrickModel.Depth);
+        }
+
+        public void ValidateEditBrickName()
+        {
+            if (EditBrickModel == null)
+            {
+                EditBrickNameValidationMessage = null;
+                return;
+            }
+
+            EditBrickNameValidationMessage = BrickNameExistsInLoadedList(EditBrickModel.Name, EditBrickModel.Id)
+                ? "Name already exists. Please use a different brick name."
+                : null;
+        }
+
+        public void ValidateEditNumericInputs()
+        {
+            if (EditBrickModel == null)
+            {
+                EditNumericValidationMessage = null;
+                return;
+            }
+
+            EditNumericValidationMessage = BuildNumericInputValidationMessage(
+                EditBrickModel.Price,
+                EditBrickModel.Strength,
+                EditBrickModel.Width,
+                EditBrickModel.Height,
+                EditBrickModel.Depth);
+        }
+
+        static void NormalizeNewBrickModel(NewBrick model)
+        {
+            model.Name = (model.Name ?? string.Empty).ToTitleCase();
+            model.Colour = (model.Colour ?? string.Empty).ToTitleCase();
+            model.Material = (model.Material ?? string.Empty).ToTitleCase();
+            model.Type = (model.Type ?? string.Empty).ToTitleCase();
+            model.Price = Math.Max(model.Price, 0m);
+            model.Strength = Math.Max(model.Strength, 0m);
+            model.Width = Math.Clamp(model.Width, 0m, 10000m);
+            model.Height = Math.Clamp(model.Height, 0m, 10000m);
+            model.Depth = Math.Clamp(model.Depth, 0m, 10000m);
+            model.Voids = Math.Clamp(model.Voids, 0m, 1m);
+        }
+
+        void NormalizeNewBrickModel()
+        {
+            NormalizeNewBrickModel(NewBrickModel);
+        }
+
+        static void NormalizeEditBrickModel(EditBrick model)
+        {
+            model.Name = (model.Name ?? string.Empty).ToTitleCase();
+            model.Colour = (model.Colour ?? string.Empty).ToTitleCase();
+            model.Material = (model.Material ?? string.Empty).ToTitleCase();
+            model.Type = (model.Type ?? string.Empty).ToTitleCase();
+            model.Price = Math.Max(model.Price, 0m);
+            model.Strength = Math.Max(model.Strength, 0m);
+            model.Width = Math.Clamp(model.Width, 0m, 10000m);
+            model.Height = Math.Clamp(model.Height, 0m, 10000m);
+            model.Depth = Math.Clamp(model.Depth, 0m, 10000m);
+            model.Voids = Math.Clamp(model.Voids, 0m, 1m);
+        }
+
+        void NormalizeEditBrickModel()
+        {
+            if (EditBrickModel == null) return;
+            NormalizeEditBrickModel(EditBrickModel);
+        }
+
+        static string? BuildNumericInputValidationMessage(decimal price, decimal strength, decimal width, decimal height, decimal depth)
+        {
+            if (price < 0) return "Price cannot be negative.";
+            if (strength < 0) return "Strength cannot be negative.";
+            if (width < 0) return "Width cannot be negative.";
+            if (height < 0) return "Height cannot be negative.";
+            if (depth < 0) return "Depth cannot be negative.";
+            if (width > 10000m || height > 10000m || depth > 10000m) return "Dimensions must be 10,000 mm or less.";
+            return null;
+        }
+
+        public static decimal ParseDecimalInput(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return 0m;
+            return decimal.TryParse(value, out var parsedValue) ? parsedValue : 0m;
+        }
+
+        public void SetAddManufacturerFromText(string? value)
+        {
+            AddManufacturerComboText = value?.Trim() ?? string.Empty;
+            NewBrickModel.ManufacturerId = ResolveManufacturerId(AddManufacturerComboText);
+        }
+
+        public void SetEditManufacturerFromText(string? value)
+        {
+            if (EditBrickModel == null) return;
+
+            EditManufacturerComboText = value?.Trim() ?? string.Empty;
+            EditBrickModel.ManufacturerId = ResolveManufacturerId(EditManufacturerComboText);
+        }
+
+        long ResolveManufacturerId(string? manufacturerName)
+        {
+            if (string.IsNullOrWhiteSpace(manufacturerName)) return 0;
+
+            var manufacturer = Manufacturers.FirstOrDefault(m =>
+                string.Equals(m.Name, manufacturerName.Trim(), StringComparison.OrdinalIgnoreCase));
+            return manufacturer?.Id ?? 0;
+        }
+
+        string GetManufacturerName(long manufacturerId)
+        {
+            return Manufacturers.FirstOrDefault(m => m.Id == manufacturerId)?.Name ?? string.Empty;
+        }
+
+        IEnumerable<IManufacturer> FilterManufacturerOptions(string? searchText)
+        {
+            if (string.IsNullOrWhiteSpace(searchText))
+            {
+                return Manufacturers.OrderBy(m => m.Name, StringComparer.OrdinalIgnoreCase);
+            }
+
+            return Manufacturers
+                .Where(m => m.Name.Contains(searchText.Trim(), StringComparison.OrdinalIgnoreCase))
+                .OrderBy(m => m.Name, StringComparer.OrdinalIgnoreCase);
+        }
+
+        bool BrickNameExistsInLoadedList(string? name, long? excludeId = null)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return false;
+
+            var normalizedName = name.Trim();
+            return Bricks.Any(brick =>
+                brick.Id != excludeId
+                && string.Equals(brick.Name.Trim(), normalizedName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        async Task<bool> BrickNameExists(string? name, long? excludeId = null)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return false;
+
+            var normalizedName = name.Trim();
+            var bricks = await _bricksMediator.GetAllBricks();
+
+            return bricks.Any(brick =>
+                brick.Id != excludeId
+                && string.Equals(brick.Name.Trim(), normalizedName, StringComparison.OrdinalIgnoreCase));
+        }
     }
 }

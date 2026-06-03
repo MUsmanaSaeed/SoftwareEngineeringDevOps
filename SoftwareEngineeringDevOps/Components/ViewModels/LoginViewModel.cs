@@ -29,7 +29,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
                 return false;
             }
 
-            var result = await _authService.Login(Username, Password);
+            var result = await _authService.LoginAsync(Username, Password);
             if (!result)
             {
                 ErrorMessage = "Invalid username or password.";

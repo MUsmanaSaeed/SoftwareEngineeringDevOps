@@ -38,10 +38,30 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public string? ErrorMessage { get; set; }
         public List<string> DeletionBlockedBricks { get; set; } = new();
         public List<string> ChildBrickNames { get; set; } = new();
+        public string ManufacturersSearchTerm { get; set; } = string.Empty;
+        public string ManufacturerBricksSearchTerm { get; set; } = string.Empty;
+        public string? AddNameValidationMessage { get; private set; }
+        public string? EditNameValidationMessage { get; private set; }
+        public bool HasAddNameConflict => !string.IsNullOrWhiteSpace(AddNameValidationMessage);
+        public bool HasEditNameConflict => !string.IsNullOrWhiteSpace(EditNameValidationMessage);
 
         public UserRole CurrentUserRole => _authService.CurrentUser != null
             ? RoleHelper.GetRole(_authService.CurrentUser)
             : UserRole.Standard;
+
+        public IEnumerable<IManufacturer> FilteredManufacturers =>
+            Manufacturers.Where(manufacturer =>
+                string.IsNullOrWhiteSpace(ManufacturersSearchTerm)
+                || manufacturer.Name.Contains(ManufacturersSearchTerm, StringComparison.OrdinalIgnoreCase)
+                || manufacturer.Email.Contains(ManufacturersSearchTerm, StringComparison.OrdinalIgnoreCase)
+                || manufacturer.PhoneNo.Contains(ManufacturersSearchTerm, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(manufacturer => manufacturer.Name, StringComparer.OrdinalIgnoreCase);
+
+        public IEnumerable<IBrick> FilteredSelectedManufacturerBricks =>
+            SelectedManufacturerBricks.Where(brick =>
+                string.IsNullOrWhiteSpace(ManufacturerBricksSearchTerm)
+                || brick.Name.Contains(ManufacturerBricksSearchTerm, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(brick => brick.Name, StringComparer.OrdinalIgnoreCase);
 
         public async Task LoadManufacturers()
         {
@@ -59,6 +79,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public void OpenAddModal()
         {
             NewManufacturerModel = new NewManufacturer();
+            AddNameValidationMessage = null;
             ValidationErrors.Clear();
             ShowAddModal = true;
         }
@@ -66,11 +87,13 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public void CloseAddModal()
         {
             ShowAddModal = false;
+            AddNameValidationMessage = null;
             ValidationErrors.Clear();
         }
 
         public async Task<bool> AddManufacturer()
         {
+            NormalizeNewManufacturerModel();
             ValidationErrors.Clear();
             var errors = InputValidator.ValidateManufacturer(NewManufacturerModel);
             if (errors.Count > 0)
@@ -79,9 +102,17 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
                 return false;
             }
 
+            if (await ManufacturerNameExists(NewManufacturerModel.Name))
+            {
+                AddNameValidationMessage = "Name already exists. Please use a different manufacturer name.";
+                ValidationErrors.Add(AddNameValidationMessage);
+                return false;
+            }
+
             IsLoading = true;
-            await _manufacturersMediator.Insert(NewManufacturerModel);
+            var createdManufacturer = await _manufacturersMediator.Insert(NewManufacturerModel);
             await LoadManufacturers();
+            await SelectManufacturer(createdManufacturer);
             ShowAddModal = false;
             IsLoading = false;
             return true;
@@ -90,6 +121,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public void OpenEditModal(IManufacturer manufacturer)
         {
             EditManufacturerModel = new EditManufacturer(manufacturer);
+            EditNameValidationMessage = null;
             ValidationErrors.Clear();
             ShowEditModal = true;
         }
@@ -97,6 +129,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         public void CloseEditModal()
         {
             ShowEditModal = false;
+            EditNameValidationMessage = null;
             ValidationErrors.Clear();
         }
 
@@ -104,6 +137,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
         {
             if (EditManufacturerModel == null) return false;
 
+            NormalizeEditManufacturerModel();
             ValidationErrors.Clear();
             var errors = InputValidator.ValidateManufacturer(EditManufacturerModel);
             if (errors.Count > 0)
@@ -112,15 +146,18 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
                 return false;
             }
 
-            IsLoading = true;
-            await _manufacturersMediator.Update(EditManufacturerModel);
-            await LoadManufacturers();
-            ShowEditModal = false;
-
-            if (SelectedManufacturer?.Id == EditManufacturerModel.Id)
+            if (await ManufacturerNameExists(EditManufacturerModel.Name, EditManufacturerModel.Id))
             {
-                SelectedManufacturer = await _manufacturersMediator.GetManufacturerById(EditManufacturerModel.Id);
+                EditNameValidationMessage = "Name already exists. Please use a different manufacturer name.";
+                ValidationErrors.Add(EditNameValidationMessage);
+                return false;
             }
+
+            IsLoading = true;
+            var updatedManufacturer = await _manufacturersMediator.Update(EditManufacturerModel);
+            await LoadManufacturers();
+            await SelectManufacturer(updatedManufacturer);
+            ShowEditModal = false;
             IsLoading = false;
             return true;
         }
@@ -180,6 +217,105 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             ShowDeleteConfirm = false;
             IsLoading = false;
             return true;
+        }
+
+        static void NormalizeNewManufacturerModel(NewManufacturer model)
+        {
+            model.Name = (model.Name ?? string.Empty).ToTitleCase();
+            model.Address1 = (model.Address1 ?? string.Empty).ToTitleCase();
+            model.Address2 = string.IsNullOrWhiteSpace(model.Address2) ? string.Empty : model.Address2.ToTitleCase();
+            model.Postcode = (model.Postcode ?? string.Empty).ToUpperInvariant();
+            model.PhoneNo = SanitizePhone(model.PhoneNo);
+            model.Email = (model.Email ?? string.Empty).Trim();
+        }
+
+        void NormalizeNewManufacturerModel()
+        {
+            NormalizeNewManufacturerModel(NewManufacturerModel);
+        }
+
+        static void NormalizeEditManufacturerModel(EditManufacturer model)
+        {
+            model.Name = (model.Name ?? string.Empty).ToTitleCase();
+            model.Address1 = (model.Address1 ?? string.Empty).ToTitleCase();
+            model.Address2 = string.IsNullOrWhiteSpace(model.Address2) ? string.Empty : model.Address2.ToTitleCase();
+            model.Postcode = (model.Postcode ?? string.Empty).ToUpperInvariant();
+            model.PhoneNo = SanitizePhone(model.PhoneNo);
+            model.Email = (model.Email ?? string.Empty).Trim();
+        }
+
+        void NormalizeEditManufacturerModel()
+        {
+            if (EditManufacturerModel == null) return;
+            NormalizeEditManufacturerModel(EditManufacturerModel);
+        }
+
+        public static string SanitizePhone(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return string.Empty;
+
+            var input = value.Trim();
+            var chars = new List<char>(input.Length);
+            var hasLeadingPlus = false;
+
+            foreach (var character in input)
+            {
+                if (character == '+' && !hasLeadingPlus && chars.Count == 0)
+                {
+                    chars.Add(character);
+                    hasLeadingPlus = true;
+                    continue;
+                }
+
+                if (char.IsDigit(character))
+                {
+                    chars.Add(character);
+                }
+            }
+
+            return new string(chars.ToArray());
+        }
+
+        public void ValidateAddManufacturerName()
+        {
+            AddNameValidationMessage = ManufacturerNameExistsInLoadedList(NewManufacturerModel.Name)
+                ? "Name already exists. Please use a different manufacturer name."
+                : null;
+        }
+
+        public void ValidateEditManufacturerName()
+        {
+            if (EditManufacturerModel == null)
+            {
+                EditNameValidationMessage = null;
+                return;
+            }
+
+            EditNameValidationMessage = ManufacturerNameExistsInLoadedList(EditManufacturerModel.Name, EditManufacturerModel.Id)
+                ? "Name already exists. Please use a different manufacturer name."
+                : null;
+        }
+
+        bool ManufacturerNameExistsInLoadedList(string? name, long? excludeId = null)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return false;
+
+            var normalizedName = name.Trim();
+            return Manufacturers.Any(manufacturer =>
+                manufacturer.Id != excludeId
+                && string.Equals(manufacturer.Name.Trim(), normalizedName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        async Task<bool> ManufacturerNameExists(string? name, long? excludeId = null)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return false;
+
+            var normalizedName = name.Trim();
+            var manufacturers = await _manufacturersMediator.GetAllManufacturers();
+
+            return manufacturers.Any(manufacturer =>
+                manufacturer.Id != excludeId
+                && string.Equals(manufacturer.Name.Trim(), normalizedName, StringComparison.OrdinalIgnoreCase));
         }
     }
 }

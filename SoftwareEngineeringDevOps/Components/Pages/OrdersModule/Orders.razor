@@ -1,9 +1,18 @@
-@page "/brick-orders"
-@inject SoftwareEngineeringDevOps.App.Auth.IAuthService AuthService
-@inject SoftwareEngineeringDevOps.App.BrickOrders.IBrickOrdersMediator OrdersMediator
-@inject SoftwareEngineeringDevOps.App.BrickOrdersReceived.IBrickOrdersReceivedMediator ReceivedMediator
-@inject SoftwareEngineeringDevOps.App.Bricks.IBricksMediator BricksMediator
+@page "/orders"
+@page "/orders/{QueryOrderNo}"
+@inject IAuthService AuthService
+@inject IBrickOrdersMediator OrdersMediator
+@inject IBrickOrdersReceivedMediator ReceivedMediator
+@inject IBricksMediator BricksMediator
 @inject NavigationManager Navigation
+@inject IToastService ToastService
+
+@using Microsoft.AspNetCore.Components.Web
+@using SoftwareEngineeringDevOps.App.Auth
+@using SoftwareEngineeringDevOps.App.Bricks
+@using SoftwareEngineeringDevOps.App.BrickOrders
+@using SoftwareEngineeringDevOps.App.BrickOrdersReceived
+@using Components.ViewModels
 
 <PageTitle>Orders</PageTitle>
 
@@ -11,34 +20,51 @@
     <div class="split-left">
         <div class="panel-header">
             <h3>Orders</h3>
-            @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanCreate(ViewModel.CurrentUserRole))
-            {
-                <button class="btn btn-add" @onclick="ViewModel.OpenAddOrderModal">
-                    <span class="icon">&#xE710;</span>
-                </button>
-            }
+            <div class="panel-header-actions">
+                <input class="form-input panel-header-search" placeholder="Search orders..." @bind="ViewModel.OrderGroupsSearchTerm" @bind:event="oninput" />
+                @if (RoleHelper.CanCreate(ViewModel.CurrentUserRole))
+                {
+                    <button class="btn btn-add" @onclick="ViewModel.OpenAddOrderModal">
+                        <span class="icon">&#xE710;</span>
+                    </button>
+                }
+            </div>
         </div>
         <div class="data-table-container">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Order No</th>
-                        <th>Lines</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var group in ViewModel.OrderGroups)
-                    {
-                        <tr class="@(ViewModel.SelectedOrderNo == group.Key ? "selected" : "")"
-                            @onclick="() => HandleSelectGroup(group.Key)">
-                            <td>@group.Key</td>
-                            <td>@group.Count()</td>
-                            <td>@group.First().OrderedDate.ToString("dd/MM/yyyy")</td>
+            @{
+                var filteredGroups = ViewModel.FilteredOrderGroups.ToList();
+            }
+            @if (filteredGroups.Count > 0)
+            {
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Order No</th>
+                            <th>Lines</th>
+                            <th>Date</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var group in filteredGroups)
+                        {
+                            var groupCount = group.Count();
+                            var groupFirst = group.First();
+                            <tr class="@(ViewModel.SelectedOrderNo == group.Key ? "selected" : "")"
+                                @onclick="() => HandleSelectGroup(group.Key)">
+                                <td>@group.Key</td>
+                                <td>@groupCount</td>
+                                <td>@groupFirst.OrderedDate.ToString("dd/MM/yyyy")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="no-results">
+                    <p>No orders found</p>
+                </div>
+            }
         </div>
     </div>
     <div class="split-right">
@@ -47,48 +73,87 @@
             <div class="detail-panel">
                 <div class="detail-header">
                     <h3>Order: @ViewModel.SelectedOrderNo</h3>
+                    @if (RoleHelper.CanCreate(ViewModel.CurrentUserRole))
+                    {
+                        <button class="btn btn-add btn-sm" title="Add Order Line" @onclick="HandleAddOrderLineForSelectedOrder">
+                            <span class="icon">&#xE710;</span>
+                        </button>
+                    }
+                </div>
+                <div class="order-overall-progress">
+                    <div class="order-overall-progress-dates">
+                        <span>First Ordered: @(ViewModel.SelectedOrderFirstOrderedDate?.ToString("dd/MM/yyyy") ?? "N/A")</span>
+                        <span>Last Expected: @(ViewModel.SelectedOrderLastExpectedDate?.ToString("dd/MM/yyyy") ?? "N/A")</span>
+                    </div>
+                    <div class="progress-bar-track">
+                        <div class="progress-bar @(ViewModel.SelectedOrderFulfillmentPercentage == 0 ? "progress-bar-empty" : string.Empty)" style="width: @(ViewModel.SelectedOrderFulfillmentPercentage.ToString(System.Globalization.CultureInfo.InvariantCulture))%;"></div>
+                        <span class="progress-bar-label">@ViewModel.SelectedOrderTotalReceived / @ViewModel.SelectedOrderTotalOrdered (@ViewModel.SelectedOrderFulfillmentPercentage%)</span>
+                    </div>
                 </div>
                 <div class="order-lines">
-                    @foreach (var line in ViewModel.SelectedOrderLines)
-                    {
-                        var brick = ViewModel.Bricks.FirstOrDefault(b => b.Id == line.BrickId);
+                    @foreach (var line in ViewModel.SortedSelectedOrderLines)
+                        {
+                            var brick = ViewModel.GetBrick(line.BrickId);
                         var pct = ViewModel.GetFulfillmentPercentage(line);
                         var totalRcv = ViewModel.GetTotalReceived(line);
+                        var statusClass = ViewModel.GetOrderLineStateClass(line);
+                        var statusText = ViewModel.GetOrderLineStatusText(line);
 
-                        <div class="order-line-card">
-                            <div class="order-line-header">
+                        <div class="order-line-card @statusClass @(line.CancelledDate == null ? "order-line-card-interactive" : string.Empty) @(ViewModel.IsRowExpanded(line.Id) ? "order-line-card-expanded" : string.Empty)"
+                             @onclick="() => HandleToggleRowExpansion(line)"
+                             style="cursor: @(line.CancelledDate == null ? "pointer" : "default");">
+                            <div class="order-line-header @(line.CancelledDate == null ? "order-line-header-clickable" : string.Empty)">
                                 <div class="order-line-info">
-                                    <strong>@(brick?.Name ?? "Unknown Brick")</strong>
+                                    <div class="order-line-title-row">
+                                        <strong>@(brick?.Name ?? "Unknown Brick")</strong>
+                                        @if (!string.IsNullOrWhiteSpace(statusText))
+                                        {
+                                            <span class="order-status-badge">@statusText</span>
+                                        }
+                                    </div>
                                     <span class="order-qty">Qty: @line.BricksOrdered</span>
-                                    <span class="order-date">Expected: @line.ExpectedDate.ToString("dd/MM/yyyy")</span>
+                                    <div class="order-dates">
+                                        <span class="order-date">Ordered: @line.OrderedDate.ToString("dd/MM/yyyy")</span>
+                                        <span class="order-date">Expected: @line.ExpectedDate.ToString("dd/MM/yyyy")</span>
+                                    </div>
                                 </div>
                                 <div class="order-line-actions">
-                                    @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanCreate(ViewModel.CurrentUserRole))
+                                    @if (RoleHelper.CanCreate(ViewModel.CurrentUserRole))
                                     {
-                                        <button class="btn btn-add btn-sm" title="Add Received" @onclick="() => ViewModel.OpenAddReceivedModal(line.Id)">
+                                        <button class="btn btn-add btn-sm" title="Add Received" @onclick="() => ViewModel.OpenAddReceivedModal(line.Id)" @onclick:stopPropagation="true">
                                             <span class="icon">&#xE710;</span>
                                         </button>
                                     }
-                                    @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanEdit(ViewModel.CurrentUserRole))
+                                    @if (RoleHelper.CanEdit(ViewModel.CurrentUserRole))
                                     {
-                                        <button class="btn btn-edit btn-sm" @onclick="() => ViewModel.OpenEditOrderModal(line)">
+                                        <button class="btn btn-edit btn-sm" title="Edit Order Line" @onclick="() => ViewModel.OpenEditOrderModal(line)" @onclick:stopPropagation="true">
                                             <span class="icon">&#xE70F;</span>
                                         </button>
                                     }
-                                    @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanDelete(ViewModel.CurrentUserRole))
+                                    @if (RoleHelper.CanDelete(ViewModel.CurrentUserRole))
                                     {
-                                        <button class="btn btn-delete btn-sm" @onclick="() => ViewModel.OpenDeleteOrderConfirm(line)">
+                                        <button class="btn btn-delete btn-sm" title="Delete Order Line" @onclick="() => ViewModel.OpenDeleteOrderConfirm(line)" @onclick:stopPropagation="true">
                                             <span class="icon">&#xE74D;</span>
                                         </button>
                                     }
-                                    <button class="btn btn-sm" @onclick="() => ViewModel.ToggleRowExpansion(line.Id)">
-                                        <span class="icon">@(ViewModel.IsRowExpanded(line.Id) ? "\uE70E" : "\uE70D")</span>
-                                    </button>
+                                    @if (ViewModel.CanToggleCancellation(line))
+                                    {
+                                        <button class="btn @(line.CancelledDate == null ? "btn-warning" : "btn-add") btn-sm" title="@(line.CancelledDate == null ? "Cancel Order" : "Uncancel Order")" @onclick="() => HandleToggleOrderCancellation(line)" @onclick:stopPropagation="true">
+                                            <span class="icon">@(line.CancelledDate == null ? "\uE711" : "\uE73E")</span>
+                                        </button>
+                                    }
+                                    @if (line.CancelledDate == null)
+                                    {
+                                        <button class="btn btn-sm" title="@(ViewModel.IsRowExpanded(line.Id) ? "Collapse Received Batches" : "Expand Received Batches")" @onclick="() => HandleToggleRowExpansion(line)" @onclick:stopPropagation="true">
+                                            <span class="icon">@(ViewModel.IsRowExpanded(line.Id) ? "\uE70E" : "\uE70D")</span>
+                                        </button>
+                                    }
                                 </div>
                             </div>
                             <div class="progress-bar-container">
-                                <div class="progress-bar" style="width: @pct%;">
-                                    <span>@totalRcv / @line.BricksOrdered (@pct%)</span>
+                                <div class="progress-bar-track">
+                                    <div class="progress-bar @(pct == 0 ? "progress-bar-empty" : string.Empty)" style="width: @(pct.ToString(System.Globalization.CultureInfo.InvariantCulture))%;"></div>
+                                    <span class="progress-bar-label">@totalRcv / @line.BricksOrdered (@pct%)</span>
                                 </div>
                             </div>
                             @if (line.CancelledDate != null)
@@ -96,53 +161,55 @@
                                 <div class="order-cancelled">Cancelled: @line.CancelledDate.Value.ToString("dd/MM/yyyy")</div>
                             }
 
-                            @if (ViewModel.IsRowExpanded(line.Id))
-                            {
-                                <div class="received-section">
-                                    <h5>Received Batches</h5>
-                                    @if (ViewModel.ReceivedByOrderLine.TryGetValue(line.Id, out var receivedItems) && receivedItems.Any())
-                                    {
-                                        <table class="data-table data-table-sm">
-                                            <thead>
-                                                <tr>
-                                                    <th>Qty</th>
-                                                    <th>Date</th>
-                                                    <th>By</th>
-                                                    <th></th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach (var rcv in receivedItems)
-                                                {
+                            <div class="received-section-wrapper @(ViewModel.IsRowExpanded(line.Id) ? "received-section-wrapper-expanded" : string.Empty)" @onclick:stopPropagation="true">
+                                @if (ViewModel.IsRowExpanded(line.Id))
+                                {
+                                    <div class="received-section">
+                                        <h5>Received Batches</h5>
+                                        @if (ViewModel.ReceivedByOrderLine.TryGetValue(line.Id, out var receivedItems) && receivedItems.Any())
+                                        {
+                                            <table class="data-table data-table-sm">
+                                                <thead>
                                                     <tr>
-                                                        <td>@rcv.BricksReceived</td>
-                                                        <td>@rcv.ReceivedDate.ToString("dd/MM/yyyy")</td>
-                                                        <td>@rcv.ReceivedBy.FirstName @rcv.ReceivedBy.LastName</td>
-                                                        <td class="row-actions">
-                                                            @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanEdit(ViewModel.CurrentUserRole))
-                                                            {
-                                                                <button class="btn btn-edit btn-xs" @onclick="() => ViewModel.OpenEditReceivedModal(rcv)">
-                                                                    <span class="icon">&#xE70F;</span>
-                                                                </button>
-                                                            }
-                                                            @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanDelete(ViewModel.CurrentUserRole))
-                                                            {
-                                                                <button class="btn btn-delete btn-xs" @onclick="() => ViewModel.OpenDeleteReceivedConfirm(rcv)">
-                                                                    <span class="icon">&#xE74D;</span>
-                                                                </button>
-                                                            }
-                                                        </td>
+                                                        <th>Qty</th>
+                                                        <th>Date</th>
+                                                        <th>By</th>
+                                                        <th class="actions-column"></th>
                                                     </tr>
-                                                }
-                                            </tbody>
-                                        </table>
-                                    }
-                                    else
-                                    {
-                                        <p class="text-muted">No batches received yet.</p>
-                                    }
-                                </div>
-                            }
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var rcv in ViewModel.FilterReceivedItems(receivedItems).OrderByDescending(r => r.ReceivedDate))
+                                                    {
+                                                        <tr>
+                                                            <td>@rcv.BricksReceived</td>
+                                                            <td>@rcv.ReceivedDate.ToString("dd/MM/yyyy")</td>
+                                                            <td>@rcv.ReceivedBy.FirstName @rcv.ReceivedBy.LastName</td>
+                                                            <td class="row-actions actions-column">
+                                                                @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanEdit(ViewModel.CurrentUserRole))
+                                                                {
+                                                                    <button class="btn btn-edit btn-xs" title="Edit Received Batch" @onclick="() => ViewModel.OpenEditReceivedModal(rcv)">
+                                                                        <span class="icon">&#xE70F;</span>
+                                                                    </button>
+                                                                }
+                                                                @if (global::SoftwareEngineeringDevOps.App.Auth.RoleHelper.CanDelete(ViewModel.CurrentUserRole))
+                                                                {
+                                                                    <button class="btn btn-delete btn-xs" title="Delete Received Batch" @onclick="() => ViewModel.OpenDeleteReceivedConfirm(rcv)">
+                                                                        <span class="icon">&#xE74D;</span>
+                                                                    </button>
+                                                                }
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        }
+                                        else
+                                        {
+                                            <p class="received-empty-message">No batches received yet.</p>
+                                        }
+                                    </div>
+                                }
+                            </div>
                         </div>
                     }
                 </div>
@@ -179,13 +246,10 @@
                 </div>
                 <div class="form-group">
                     <label>Brick</label>
-                    <select class="form-input" @bind="ViewModel.NewOrderModel.BrickId">
-                        <option value="0">-- Select --</option>
-                        @foreach (var b in ViewModel.Bricks)
-                        {
-                            <option value="@b.Id">@b.Name</option>
-                        }
-                    </select>
+                    <SearchableCombobox Value="@ViewModel.AddBrickComboText"
+                                        ValueChanged="HandleAddBrickChanged"
+                                        Options="@ViewModel.Bricks.Select(b => b.Name)"
+                                        Placeholder="Search bricks..." />
                 </div>
                 <div class="form-group">
                     <label>Quantity</label>
@@ -193,16 +257,20 @@
                 </div>
                 <div class="form-group">
                     <label>Order Date</label>
-                    <input class="form-input" type="date" @bind="ViewModel.NewOrderModel.OrderedDate" />
+                    <input class="form-input" type="date" max="@ViewModel.TodayInputValue" value="@ViewModel.NewOrderModel.OrderedDate.ToString("yyyy-MM-dd")" @oninput="HandleAddOrderDateInput" />
                 </div>
                 <div class="form-group">
                     <label>Expected Date</label>
-                    <input class="form-input" type="date" @bind="ViewModel.NewOrderModel.ExpectedDate" />
+                    <input class="form-input" type="date" min="@ViewModel.AddOrderMinExpectedDateInputValue" value="@ViewModel.NewOrderModel.ExpectedDate.ToString("yyyy-MM-dd")" @oninput="HandleAddExpectedDateInput" />
                 </div>
+                @if (!string.IsNullOrWhiteSpace(ViewModel.AddOrderDateValidationMessage))
+                {
+                    <div class="alert alert-error">@ViewModel.AddOrderDateValidationMessage</div>
+                }
             </div>
             <div class="modal-footer">
                 <button class="btn btn-cancel" @onclick="ViewModel.CloseAddOrderModal">Cancel</button>
-                <button class="btn btn-add" @onclick="HandleAddOrder">Save</button>
+                <button class="btn btn-add" @onclick="HandleAddOrder" disabled="@(!ViewModel.CanSubmitAddOrder)">Save</button>
             </div>
         </div>
     </div>
@@ -230,12 +298,10 @@
                 </div>
                 <div class="form-group">
                     <label>Brick</label>
-                    <select class="form-input" @bind="ViewModel.EditOrderModel.BrickId">
-                        @foreach (var b in ViewModel.Bricks)
-                        {
-                            <option value="@b.Id">@b.Name</option>
-                        }
-                    </select>
+                    <SearchableCombobox Value="@ViewModel.EditBrickComboText"
+                                        ValueChanged="HandleEditBrickChanged"
+                                        Options="@ViewModel.Bricks.Select(b => b.Name)"
+                                        Placeholder="Search bricks..." />
                 </div>
                 <div class="form-group">
                     <label>Quantity</label>
@@ -243,16 +309,20 @@
                 </div>
                 <div class="form-group">
                     <label>Order Date</label>
-                    <input class="form-input" type="date" @bind="ViewModel.EditOrderModel.OrderedDate" />
+                    <input class="form-input" type="date" max="@ViewModel.TodayInputValue" value="@ViewModel.EditOrderModel.OrderedDate.ToString("yyyy-MM-dd")" @oninput="HandleEditOrderDateInput" />
                 </div>
                 <div class="form-group">
                     <label>Expected Date</label>
-                    <input class="form-input" type="date" @bind="ViewModel.EditOrderModel.ExpectedDate" />
+                    <input class="form-input" type="date" min="@ViewModel.EditOrderMinExpectedDateInputValue" value="@ViewModel.EditOrderModel.ExpectedDate.ToString("yyyy-MM-dd")" @oninput="HandleEditExpectedDateInput" />
                 </div>
+                @if (!string.IsNullOrWhiteSpace(ViewModel.EditOrderDateValidationMessage))
+                {
+                    <div class="alert alert-error">@ViewModel.EditOrderDateValidationMessage</div>
+                }
             </div>
             <div class="modal-footer">
                 <button class="btn btn-cancel" @onclick="ViewModel.CloseEditOrderModal">Cancel</button>
-                <button class="btn btn-edit" @onclick="HandleUpdateOrder">Save</button>
+                <button class="btn btn-edit" @onclick="HandleUpdateOrder" disabled="@(!ViewModel.CanSubmitEditOrder)">Save</button>
             </div>
         </div>
     </div>
@@ -365,9 +435,9 @@
 }
 
 @code {
-    private Components.ViewModels.OrdersViewModel ViewModel { get; set; } = null!;
+    OrdersViewModel ViewModel { get; set; } = null!;
 
-    [SupplyParameterFromQuery(Name = "orderNo")]
+    [Parameter]
     public string? QueryOrderNo { get; set; }
 
     [SupplyParameterFromQuery(Name = "action")]
@@ -375,7 +445,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        ViewModel = new Components.ViewModels.OrdersViewModel(OrdersMediator, ReceivedMediator, BricksMediator, AuthService);
+        ViewModel = new OrdersViewModel(OrdersMediator, ReceivedMediator, BricksMediator, AuthService);
         await ViewModel.LoadOrders();
 
         if (!string.IsNullOrEmpty(QueryOrderNo))
@@ -389,38 +459,155 @@
         }
     }
 
-    private async Task HandleSelectGroup(string orderNo)
+    async Task HandleSelectGroup(string orderNo)
     {
-        await ViewModel.SelectOrderGroup(orderNo);
+        // Phase 1: apply selection synchronously so Blazor renders the right panel instantly
+        ViewModel.ApplyOrderGroupSelection(orderNo);
+        Navigation.NavigateTo($"/orders/{orderNo}", forceLoad: false, replace: true);
+        StateHasChanged();
+
+        // Phase 2: load received items in the background, then re-render with the data
+        await ViewModel.LoadSelectedOrderReceivedAsync();
     }
 
-    private async Task HandleAddOrder()
+    void HandleToggleRowExpansion(IBrickOrder orderLine)
     {
-        await ViewModel.AddOrder();
+        if (orderLine.CancelledDate != null)
+        {
+            return;
+        }
+
+        ViewModel.ToggleRowExpansion(orderLine.Id);
     }
 
-    private async Task HandleUpdateOrder()
+    void HandleAddOrderLineForSelectedOrder()
     {
-        await ViewModel.UpdateOrder();
+        ViewModel.OpenAddOrderModal(ViewModel.SelectedOrderNo);
     }
 
-    private async Task HandleDeleteOrder()
+    async Task HandleAddOrder()
     {
-        await ViewModel.DeleteOrder();
+        var success = await ViewModel.AddOrder();
+        if (success)
+        {
+            ToastService.Show($"Order line added to order '{ViewModel.SelectedOrderNo}'.");
+            if (!string.IsNullOrWhiteSpace(ViewModel.SelectedOrderNo))
+            {
+                Navigation.NavigateTo($"/orders/{ViewModel.SelectedOrderNo}", forceLoad: false, replace: true);
+            }
+        }
+        else
+            ToastService.Show("Failed to add order line. Please check the form.", ToastSeverity.Error);
     }
 
-    private async Task HandleAddReceived()
+    Task HandleAddBrickChanged(string value)
     {
-        await ViewModel.AddReceived();
+        ViewModel.SetAddBrickFromText(value);
+        return Task.CompletedTask;
     }
 
-    private async Task HandleUpdateReceived()
+    void HandleAddOrderDateInput(ChangeEventArgs e)
     {
-        await ViewModel.UpdateReceived();
+        if (!DateTime.TryParse(e.Value?.ToString(), out var value)) return;
+        ViewModel.NewOrderModel.OrderedDate = value;
+        ViewModel.ValidateAddOrderDates();
     }
 
-    private async Task HandleDeleteReceived()
+    void HandleAddExpectedDateInput(ChangeEventArgs e)
     {
-        await ViewModel.DeleteReceived();
+        if (!DateTime.TryParse(e.Value?.ToString(), out var value)) return;
+        ViewModel.NewOrderModel.ExpectedDate = value;
+        ViewModel.ValidateAddOrderDates();
+    }
+
+    async Task HandleUpdateOrder()
+    {
+        var success = await ViewModel.UpdateOrder();
+        if (success)
+        {
+            ToastService.Show("Order line updated successfully.");
+            if (!string.IsNullOrWhiteSpace(ViewModel.SelectedOrderNo))
+            {
+                Navigation.NavigateTo($"/orders/{ViewModel.SelectedOrderNo}", forceLoad: false, replace: true);
+            }
+        }
+        else
+            ToastService.Show("Failed to update order line. Please check the form.", ToastSeverity.Error);
+    }
+
+    Task HandleEditBrickChanged(string value)
+    {
+        ViewModel.SetEditBrickFromText(value);
+        return Task.CompletedTask;
+    }
+
+    void HandleEditOrderDateInput(ChangeEventArgs e)
+    {
+        if (ViewModel.EditOrderModel == null) return;
+        if (!DateTime.TryParse(e.Value?.ToString(), out var value)) return;
+        ViewModel.EditOrderModel.OrderedDate = value;
+        ViewModel.ValidateEditOrderDates();
+    }
+
+    void HandleEditExpectedDateInput(ChangeEventArgs e)
+    {
+        if (ViewModel.EditOrderModel == null) return;
+        if (!DateTime.TryParse(e.Value?.ToString(), out var value)) return;
+        ViewModel.EditOrderModel.ExpectedDate = value;
+        ViewModel.ValidateEditOrderDates();
+    }
+
+    async Task HandleDeleteOrder()
+    {
+        var success = await ViewModel.DeleteOrder();
+        if (success)
+            ToastService.Show("Order line deleted.", ToastSeverity.Warning);
+        else
+            ToastService.Show("Failed to delete order line.", ToastSeverity.Error);
+    }
+
+    async Task HandleToggleOrderCancellation(IBrickOrder orderLine)
+    {
+        var wasCancelled = orderLine.CancelledDate != null;
+        var success = await ViewModel.ToggleOrderCancellation(orderLine);
+        if (success)
+        {
+            var msg = wasCancelled ? "Order line reinstated." : "Order line cancelled.";
+            var severity = wasCancelled
+                ? SoftwareEngineeringDevOps.Components.Shared.ToastSeverity.Success
+                : SoftwareEngineeringDevOps.Components.Shared.ToastSeverity.Warning;
+            ToastService.Show(msg, severity);
+        }
+        else
+        {
+            ToastService.Show("Failed to update order cancellation.", ToastSeverity.Error);
+        }
+    }
+
+    async Task HandleAddReceived()
+    {
+        var success = await ViewModel.AddReceived();
+        if (success)
+            ToastService.Show("Received batch added successfully.");
+        else
+            ToastService.Show("Failed to add received batch. Please check the form.", ToastSeverity.Error);
+    }
+
+    async Task HandleUpdateReceived()
+    {
+        var success = await ViewModel.UpdateReceived();
+        if (success)
+            ToastService.Show("Received batch updated successfully.");
+        else
+            ToastService.Show("Failed to update received batch. Please check the form.", ToastSeverity.Error);
+    }
+
+    async Task HandleDeleteReceived()
+    {
+        var success = await ViewModel.DeleteReceived();
+        if (success)
+            ToastService.Show("Received batch deleted.", ToastSeverity.Warning);
+        else
+            ToastService.Show("Failed to delete received batch.", ToastSeverity.Error);
     }
 }
