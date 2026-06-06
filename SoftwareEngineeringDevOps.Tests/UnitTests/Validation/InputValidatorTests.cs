@@ -194,18 +194,18 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.Validation
         [InlineData(null)]
         [InlineData("")]
         [InlineData("   ")]
-        public void ValidateManufacturer_ShouldReturnError_WhenCountryIsNullOrWhitespace(string? invalidCountry)
+        public void ValidateManufacturer_ShouldReturnError_WhenAddress1IsNullOrWhitespace(string? invalidAddress)
         {
             // Arrange
             var manufacturer = MockDataFactory.Manufacturers.CreateValidNew();
-            manufacturer.Country = invalidCountry!;
+            manufacturer.Address1 = invalidAddress!;
 
             // Act
             var errors = InputValidator.ValidateManufacturer(manufacturer);
 
             // Assert
             errors.Should().NotBeEmpty();
-            errors.Should().Contain(e => e.Contains("Country"));
+            errors.Should().Contain(e => e.Contains("Address"));
         }
 
         #endregion
@@ -385,7 +385,7 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.Validation
         public void ValidateBrick_ShouldReturnMultipleErrors_WhenMultipleFieldsInvalid()
         {
             // Arrange
-            var invalidBrick = new NewBrick
+            var invalidBrick = new SoftwareEngineeringDevOps.App.Bricks.NewBrick
             {
                 Name = null!,
                 ManufacturerId = 0,
@@ -406,10 +406,13 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.Validation
         public void ValidateManufacturer_ShouldReturnMultipleErrors_WhenMultipleFieldsInvalid()
         {
             // Arrange
-            var invalidManufacturer = new NewManufacturer
+            var invalidManufacturer = new SoftwareEngineeringDevOps.App.Manufacturers.NewManufacturer
             {
                 Name = null!,
-                Country = null!
+                Address1 = null!,
+                Postcode = null!,
+                PhoneNo = null!,
+                Email = null!
             };
 
             // Act

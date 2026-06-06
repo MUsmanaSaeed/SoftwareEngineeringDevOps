@@ -49,7 +49,7 @@ namespace SoftwareEngineeringDevOps.Tests.IntegrationTests.Components
             SetupEmptyCollections();
 
             // Act
-            var cut = RenderComponent<Bricks>();
+            var cut = Render<Bricks>();
 
             // Assert
             cut.Should().NotBeNull();
@@ -68,7 +68,7 @@ namespace SoftwareEngineeringDevOps.Tests.IntegrationTests.Components
             SetupBricksCollections(bricks);
 
             // Act
-            var cut = RenderComponent<Bricks>();
+            var cut = Render<Bricks>();
 
             // Assert
             cut.Markup.Should().Contain("Test Brick 1");
@@ -82,7 +82,7 @@ namespace SoftwareEngineeringDevOps.Tests.IntegrationTests.Components
             SetupEmptyCollections();
 
             // Act
-            var cut = RenderComponent<Bricks>();
+            var cut = Render<Bricks>();
 
             // Assert
             // Component should handle empty state gracefully
@@ -102,7 +102,7 @@ namespace SoftwareEngineeringDevOps.Tests.IntegrationTests.Components
             SetupEmptyCollections();
 
             // Act
-            var cut = RenderComponent<Bricks>();
+            var cut = Render<Bricks>();
 
             // Assert
             // Standard users should not see edit/add buttons
@@ -118,7 +118,7 @@ namespace SoftwareEngineeringDevOps.Tests.IntegrationTests.Components
             SetupEmptyCollections();
 
             // Act
-            var cut = RenderComponent<Bricks>();
+            var cut = Render<Bricks>();
 
             // Assert
             cut.Should().NotBeNull();
@@ -133,7 +133,7 @@ namespace SoftwareEngineeringDevOps.Tests.IntegrationTests.Components
             SetupEmptyCollections();
 
             // Act
-            var cut = RenderComponent<Bricks>();
+            var cut = Render<Bricks>();
 
             // Assert
             cut.Should().NotBeNull();
@@ -155,7 +155,7 @@ namespace SoftwareEngineeringDevOps.Tests.IntegrationTests.Components
             SetupBricksCollections(bricks);
 
             // Act
-            var cut = RenderComponent<Bricks>();
+            var cut = Render<Bricks>();
 
             // Assert
             // Both bricks should be visible initially
@@ -176,7 +176,7 @@ namespace SoftwareEngineeringDevOps.Tests.IntegrationTests.Components
 
             // Act & Assert
             // Component should handle exceptions gracefully without crashing
-            var act = () => RenderComponent<Bricks>();
+            var act = () => Render<Bricks>();
             act.Should().Throw<Exception>(); // Expected behavior - component should propagate critical errors
         }
 

@@ -254,7 +254,6 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
 
             // Assert
             result.Should().BeFalse();
-            _viewModel.AddBrickNameValidationMessage.Should().Contain("already exists");
             _viewModel.HasAddBrickNameConflict.Should().BeTrue();
         }
 
@@ -460,7 +459,6 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
         {
             // Arrange
             _viewModel.ValidationErrors.Add("Some error");
-            _viewModel.AddBrickNameValidationMessage = "Some message";
 
             // Act
             _viewModel.OpenAddModal();
@@ -468,7 +466,6 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
             // Assert
             _viewModel.ShowAddModal.Should().BeTrue();
             _viewModel.ValidationErrors.Should().BeEmpty();
-            _viewModel.AddBrickNameValidationMessage.Should().BeNull();
             _viewModel.NewBrickModel.Should().NotBeNull();
         }
 
@@ -508,7 +505,7 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
         public void CurrentUserRole_ShouldReturnStandard_WhenNotAuthenticated()
         {
             // Arrange
-            _mockAuthService.Setup(a => a.CurrentUser).Returns((IUserInfo?)null);
+            _mockAuthService.Setup(a => a.CurrentUser).Returns((SoftwareEngineeringDevOps.App.Users.IUserInfo?)null);
 
             // Act
             var role = _viewModel.CurrentUserRole;

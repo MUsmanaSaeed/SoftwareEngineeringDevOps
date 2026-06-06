@@ -17,14 +17,26 @@ namespace SoftwareEngineeringDevOps.Tests.TestUtilities
                 return new NewManufacturer
                 {
                     Name = name,
-                    Country = "United Kingdom",
-                    Website = "https://example.com"
+                    Address1 = "123 Test Street",
+                    Address2 = "Suite 100",
+                    Postcode = "SW1A 1AA",
+                    PhoneNo = "+441234567890",
+                    Email = "test@example.com"
                 };
             }
 
             public static Manufacturer CreateValid(long id = 1, string name = "Test Manufacturer")
             {
-                return new Manufacturer(id, name, "United Kingdom", "https://example.com");
+                return Manufacturer.FromDBO(new SoftwareEngineeringDevOps.App.Manufacturers.Persistence.DBOs.ManufacturerDBO
+                {
+                    Id = id,
+                    Name = name,
+                    Address1 = "123 Test Street",
+                    Address2 = "Suite 100",
+                    Postcode = "SW1A 1AA",
+                    PhoneNo = "+441234567890",
+                    Email = "test@example.com"
+                });
             }
 
             public static Manufacturer CreateTestManufacturer() => CreateValid(1, "ACME Bricks Ltd");
@@ -89,7 +101,21 @@ namespace SoftwareEngineeringDevOps.Tests.TestUtilities
             public static Brick CreateValid(long id = 1, long manufacturerId = 1, string name = "Test Brick")
             {
                 var manufacturer = Manufacturers.CreateValid(manufacturerId, "Test Manufacturer");
-                return new Brick(id, name, manufacturer, 10.50m, "Red", "Clay", "Standard", 25.5m, 215m, 102.5m, 65m, 0.15m);
+                return Brick.FromDBO(new SoftwareEngineeringDevOps.App.Bricks.Persistence.DBOs.BrickDBO
+                {
+                    Id = id,
+                    Name = name,
+                    ManufacturerId = manufacturerId,
+                    Price = 10.50m,
+                    Colour = "Red",
+                    Material = "Clay",
+                    Type = "Standard",
+                    Strength = 25.5m,
+                    Width = 215m,
+                    Height = 102.5m,
+                    Depth = 65m,
+                    Voids = 0.15m
+                }, manufacturer);
             }
         }
 
@@ -108,8 +134,17 @@ namespace SoftwareEngineeringDevOps.Tests.TestUtilities
 
             public static BrickOrder CreateValid(long id = 1, long brickId = 1, string orderNo = "ORD-20260101-001", bool isCancelled = false)
             {
-                var brick = Bricks.CreateValid(brickId);
-                return new BrickOrder(id, brick, orderNo, 1000, DateTime.UtcNow, isCancelled);
+                var createdByUser = Users.CreateValid(1);
+                return BrickOrder.FromDBO(new SoftwareEngineeringDevOps.App.BrickOrders.Persistence.DBOs.BrickOrderDBO
+                {
+                    Id = id,
+                    OrderNo = orderNo,
+                    BrickId = brickId,
+                    BricksOrdered = 1000,
+                    OrderedDate = DateTime.UtcNow,
+                    ExpectedDate = DateTime.UtcNow.AddDays(30),
+                    CancelledDate = isCancelled ? DateTime.UtcNow : null
+                }, createdByUser);
             }
         }
 
@@ -130,7 +165,16 @@ namespace SoftwareEngineeringDevOps.Tests.TestUtilities
 
             public static User CreateValid(long id = 1, string username = "testuser", bool isAdmin = false, bool isEditor = false)
             {
-                return new User(id, username, "SecurePassword123!", "Test", "User", isAdmin, isEditor);
+                return User.FromDBO(new SoftwareEngineeringDevOps.App.Users.Persistence.DBOs.UserDBO
+                {
+                    Id = id,
+                    Username = username,
+                    Password = "SecurePassword123!",
+                    FirstName = "Test",
+                    LastName = "User",
+                    IsAdmin = isAdmin,
+                    IsEditor = isEditor
+                });
             }
 
             public static User CreateAdmin() => CreateValid(1, "admin", isAdmin: true, isEditor: false);
