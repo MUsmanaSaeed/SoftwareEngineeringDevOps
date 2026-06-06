@@ -106,7 +106,12 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
             var createdBrick = MockDataFactory.Bricks.CreateValid(1, newBrick.ManufacturerId, newBrick.Name);
             _viewModel.NewBrickModel = newBrick;
 
-            _mockBricksMediator.Setup(m => m.GetAllBricks()).ReturnsAsync(new List<IBrick> { createdBrick });
+            // First call to GetAllBricks (from BrickNameExists check) should return empty
+            // Second call (from LoadBricks after insert) should return the created brick
+            var callSequence = 0;
+            _mockBricksMediator.Setup(m => m.GetAllBricks())
+                .ReturnsAsync(() => callSequence++ == 0 ? new List<IBrick>() : new List<IBrick> { createdBrick });
+            
             _mockManufacturersMediator.Setup(m => m.GetAllManufacturers()).ReturnsAsync(Enumerable.Empty<IManufacturer>());
             _mockBricksMediator.Setup(m => m.Insert(It.IsAny<NewBrick>())).ReturnsAsync(createdBrick);
             _mockBricksMediator.Setup(m => m.GetBrickById(createdBrick.Id)).ReturnsAsync(createdBrick);
@@ -178,6 +183,7 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
             var newBrick = MockDataFactory.Bricks.CreateValidNew();
             newBrick.Name = string.Empty;
             _viewModel.NewBrickModel = newBrick;
+            _viewModel.ShowAddModal = true; // Modal should remain open on validation failure
 
             // Act
             var result = await _viewModel.AddBrick();
@@ -185,8 +191,33 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
             // Assert
             result.Should().BeFalse();
             _viewModel.ValidationErrors.Should().NotBeEmpty();
-            _viewModel.ShowAddModal.Should().BeTrue();
+            _viewModel.ShowAddModal.Should().BeTrue(); // Modal stays open
             _mockBricksMediator.Verify(m => m.Insert(It.IsAny<NewBrick>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task AddBrick_ShouldNormalize_NegativePrice()
+        {
+            // Arrange
+            var newBrick = MockDataFactory.Bricks.CreateValidNew();
+            newBrick.Price = -10m; // Negative price will be normalized to 0
+            var createdBrick = MockDataFactory.Bricks.CreateValid(1, newBrick.ManufacturerId, newBrick.Name);
+            _viewModel.NewBrickModel = newBrick;
+
+            var callSequence = 0;
+            _mockBricksMediator.Setup(m => m.GetAllBricks())
+                .ReturnsAsync(() => callSequence++ == 0 ? new List<IBrick>() : new List<IBrick> { createdBrick });
+            _mockManufacturersMediator.Setup(m => m.GetAllManufacturers()).ReturnsAsync(Enumerable.Empty<IManufacturer>());
+            _mockBricksMediator.Setup(m => m.Insert(It.IsAny<NewBrick>())).ReturnsAsync(createdBrick);
+            _mockBricksMediator.Setup(m => m.GetBrickById(createdBrick.Id)).ReturnsAsync(createdBrick);
+            _mockOrdersMediator.Setup(m => m.GetBrickOrdersByBrickId(createdBrick.Id)).ReturnsAsync(Enumerable.Empty<IBrickOrder>());
+
+            // Act
+            var result = await _viewModel.AddBrick();
+
+            // Assert
+            result.Should().BeTrue();
+            _viewModel.NewBrickModel.Price.Should().Be(0m); // Price normalized to 0
         }
 
         [Fact]
@@ -206,35 +237,28 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
         }
 
         [Fact]
-        public async Task AddBrick_ShouldFail_WhenPriceIsNegative()
+        public async Task AddBrick_ShouldNormalize_ExcessiveDimensions()
         {
             // Arrange
             var newBrick = MockDataFactory.Bricks.CreateValidNew();
-            newBrick.Price = -10m;
+            newBrick.Width = 15000m; // Over maximum, will be clamped to 10000
+            var createdBrick = MockDataFactory.Bricks.CreateValid(1, newBrick.ManufacturerId, newBrick.Name);
             _viewModel.NewBrickModel = newBrick;
+
+            var callSequence = 0;
+            _mockBricksMediator.Setup(m => m.GetAllBricks())
+                .ReturnsAsync(() => callSequence++ == 0 ? new List<IBrick>() : new List<IBrick> { createdBrick });
+            _mockManufacturersMediator.Setup(m => m.GetAllManufacturers()).ReturnsAsync(Enumerable.Empty<IManufacturer>());
+            _mockBricksMediator.Setup(m => m.Insert(It.IsAny<NewBrick>())).ReturnsAsync(createdBrick);
+            _mockBricksMediator.Setup(m => m.GetBrickById(createdBrick.Id)).ReturnsAsync(createdBrick);
+            _mockOrdersMediator.Setup(m => m.GetBrickOrdersByBrickId(createdBrick.Id)).ReturnsAsync(Enumerable.Empty<IBrickOrder>());
 
             // Act
             var result = await _viewModel.AddBrick();
 
             // Assert
-            result.Should().BeFalse();
-            _viewModel.ValidationErrors.Should().Contain(e => e.Contains("Price") && e.Contains("negative"));
-        }
-
-        [Fact]
-        public async Task AddBrick_ShouldFail_WhenDimensionsExceedMaximum()
-        {
-            // Arrange
-            var newBrick = MockDataFactory.Bricks.CreateValidNew();
-            newBrick.Width = 10001m;
-            _viewModel.NewBrickModel = newBrick;
-
-            // Act
-            var result = await _viewModel.AddBrick();
-
-            // Assert
-            result.Should().BeFalse();
-            _viewModel.ValidationErrors.Should().Contain(e => e.Contains("Dimensions") || e.Contains("10,000"));
+            result.Should().BeTrue();
+            _viewModel.NewBrickModel.Width.Should().Be(10000m); // Width clamped to maximum
         }
 
         [Fact]

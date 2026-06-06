@@ -240,7 +240,7 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.Validation
 
             // Assert
             errors.Should().NotBeEmpty();
-            errors.Should().Contain(e => e.Contains("Order") && e.Contains("No"));
+            errors.Should().Contain(e => e.Contains("Order Number"));
         }
 
         [Fact]
@@ -369,12 +369,11 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.Validation
             user.LastName = string.Empty;
 
             // Act
-            var errors = InputValidator.ValidateUser(user);
+            var errors = InputValidator.ValidateUser(user, requireLastName: false);
 
             // Assert
-            // Last name is typically optional in many systems
-            // If it's required in your system, this test should be adjusted
-            errors.Should().NotContain(e => e.Contains("Last") && e.Contains("Name"));
+            // Last name is not required when requireLastName is false
+            errors.Should().BeEmpty();
         }
 
         #endregion
