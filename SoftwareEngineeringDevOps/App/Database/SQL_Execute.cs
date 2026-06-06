@@ -59,7 +59,7 @@ namespace SoftwareEngineeringDevOps.App.Database
             return results;
         }
 
-        public static List<T>? Select<T>(string connectionString, string query, bool isStoredProcedure = false)
+        public static List<T>? Select<T>(string connectionString, string query, bool isStoredProcedure = true)
         {
             using NpgsqlConnection connection = new(connectionString);
             connection.Open();
@@ -68,7 +68,7 @@ namespace SoftwareEngineeringDevOps.App.Database
             return Select<T>(command, isStoredProcedure);
         }
 
-        public static List<T>? Select<T>(string connectionString, string query, Dictionary<string, object?> parameters, bool isStoredProcedure = false)
+        public static List<T>? Select<T>( string connectionString, string query, Dictionary<string, object?> parameters,  bool isStoredProcedure = true)
         {
             using NpgsqlConnection connection = new(connectionString);
             connection.Open();
@@ -81,7 +81,7 @@ namespace SoftwareEngineeringDevOps.App.Database
             return Select<T>(command, isStoredProcedure);
         }
 
-        public static void ExecuteWithParameters(string connectionString, string query, Dictionary<string, object?> parameters, bool isStoredProcedure = false)
+        public static void ExecuteWithParameters(string connectionString, string query, Dictionary<string, object?> parameters, bool isStoredProcedure = true)
         {
             try
             {
