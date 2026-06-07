@@ -3,5 +3,6 @@
     <File Path=".editorconfig" />
     <File Path="render.yaml" />
   </Folder>
+  <Project Path="SoftwareEngineeringDevOps.Tests/SoftwareEngineeringDevOps.Tests.csproj" />
   <Project Path="SoftwareEngineeringDevOps/SoftwareEngineeringDevOps.csproj" />
 </Solution>

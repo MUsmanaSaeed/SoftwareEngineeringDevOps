@@ -14,7 +14,7 @@ namespace SoftwareEngineeringDevOps.Tests.IntegrationTests.E2E
         private IBrowser? _browser;
         private const string BaseUrl = "http://localhost:5000";
 
-        public async Task InitializeAsync()
+        public async ValueTask InitializeAsync()
         {
             _playwright = await Playwright.CreateAsync();
             _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
@@ -24,7 +24,7 @@ namespace SoftwareEngineeringDevOps.Tests.IntegrationTests.E2E
             });
         }
 
-        public async Task DisposeAsync()
+        public async ValueTask DisposeAsync()
         {
             if (_browser != null)
             {

@@ -16,7 +16,7 @@ namespace SoftwareEngineeringDevOps.Tests.IntegrationTests.Components
     /// <summary>
     /// bUnit integration tests for Blazor Bricks component covering rendering, interactions, and authentication
     /// </summary>
-    public class BricksComponentTests : TestContext
+    public class BricksComponentTests : BunitContext
     {
         private readonly Mock<IBricksMediator> _mockBricksMediator;
         private readonly Mock<IManufacturersMediator> _mockManufacturersMediator;
