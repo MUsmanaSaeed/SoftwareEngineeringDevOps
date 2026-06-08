@@ -319,7 +319,7 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
             // Arrange
             var order = MockDataFactory.BrickOrders.CreateValid(1, 1, "ORD-001");
             var received = MockDataFactory.BrickOrdersReceived.CreateValid(1, 1, 500);
-            _viewModel.ReceivedByOrderLine[1] = new List<IBrickOrderReceived> { received };
+            _viewModel.ReceivedByOrderLine[1] = [received];
 
             // Act
             var percentage = _viewModel.GetFulfillmentPercentage(order);
@@ -335,7 +335,7 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
             // Arrange
             var order = MockDataFactory.BrickOrders.CreateValid(1, 1, "ORD-001");
             var received = MockDataFactory.BrickOrdersReceived.CreateValid(1, 1, 500);
-            _viewModel.ReceivedByOrderLine[1] = new List<IBrickOrderReceived> { received };
+            _viewModel.ReceivedByOrderLine[1] = [received];
 
             // Act - Create order with 0 bricks ordered
             var zeroOrder = new Mock<IBrickOrder>();
@@ -372,7 +372,7 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
             var order = MockDataFactory.BrickOrders.CreateValid(1, 1, "ORD-001");
             var received1 = MockDataFactory.BrickOrdersReceived.CreateValid(1, 1, 300);
             var received2 = MockDataFactory.BrickOrdersReceived.CreateValid(2, 1, 200);
-            _viewModel.ReceivedByOrderLine[1] = new List<IBrickOrderReceived> { received1, received2 };
+            _viewModel.ReceivedByOrderLine[1] = [received1, received2];
 
             // Act
             var total = _viewModel.GetTotalReceived(order);
@@ -390,7 +390,7 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
         {
             // Arrange
             var received = MockDataFactory.BrickOrdersReceived.CreateValid(1, 1, 500);
-            _viewModel.ReceivedByOrderLine[1] = new List<IBrickOrderReceived> { received };
+            _viewModel.ReceivedByOrderLine[1] = [received];
 
             // Act
             var hasItems = _viewModel.HasReceivedItems(1);
@@ -419,7 +419,7 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
             // Arrange
             var order = MockDataFactory.BrickOrders.CreateValid(1, 1, "ORD-001");
             var received = MockDataFactory.BrickOrdersReceived.CreateValid(1, 1, 1000);
-            _viewModel.ReceivedByOrderLine[1] = new List<IBrickOrderReceived> { received };
+            _viewModel.ReceivedByOrderLine[1] = [received];
 
             // Act
             var isFullyReceived = _viewModel.IsOrderFullyReceived(order);
@@ -434,7 +434,7 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
             // Arrange
             var order = MockDataFactory.BrickOrders.CreateValid(1, 1, "ORD-001");
             var received = MockDataFactory.BrickOrdersReceived.CreateValid(1, 1, 500);
-            _viewModel.ReceivedByOrderLine[1] = new List<IBrickOrderReceived> { received };
+            _viewModel.ReceivedByOrderLine[1] = [received];
 
             // Act
             var isFullyReceived = _viewModel.IsOrderFullyReceived(order);

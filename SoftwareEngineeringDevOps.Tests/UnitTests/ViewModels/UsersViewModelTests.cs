@@ -332,7 +332,7 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
             var existingUser = MockDataFactory.Users.CreateValid(1, "existinguser");
             var newUser = new NewUser { Username = "existinguser", Password = "SecurePassword123!", FirstName = "Test", LastName = "User" };
             _viewModel.NewUserModel = newUser;
-            _viewModel.Users = new List<IUser> { existingUser };
+            _viewModel.Users = [existingUser];
 
             // Act
             var result = await _viewModel.AddUser();
@@ -396,11 +396,13 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
             // Arrange
             var user1 = MockDataFactory.Users.CreateValid(1, "user1");
             var user2 = MockDataFactory.Users.CreateValid(2, "user2");
-            var editUser = new EditUser(user1);
-            editUser.Username = "user2";
+            EditUser editUser = new(user1)
+            {
+                Username = "user2"
+            };
 
             _viewModel.EditUserModel = editUser;
-            _viewModel.Users = new List<IUser> { user1, user2 };
+            _viewModel.Users = [user1, user2];
 
             // Act
             var result = await _viewModel.UpdateUser();
@@ -417,11 +419,13 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
             var currentAdmin = MockDataFactory.Users.CreateValid(1, "admin", isAdmin: true);
             _mockAuthService.Setup(a => a.CurrentUser).Returns(currentAdmin);
 
-            var editUser = new EditUser(currentAdmin);
-            editUser.IsAdmin = false;
+            EditUser editUser = new(currentAdmin)
+            {
+                IsAdmin = false
+            };
 
             _viewModel.EditUserModel = editUser;
-            _viewModel.Users = new List<IUser> { currentAdmin };
+            _viewModel.Users = [currentAdmin];
 
             // Act
             var result = await _viewModel.UpdateUser();
@@ -439,14 +443,16 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
             var otherUser = MockDataFactory.Users.CreateValid(2, "otheruser", isAdmin: true);
             _mockAuthService.Setup(a => a.CurrentUser).Returns(currentAdmin);
 
-            var editUser = new EditUser(otherUser);
-            editUser.IsAdmin = false;
+            EditUser editUser = new(otherUser)
+            {
+                IsAdmin = false
+            };
 
             _viewModel.EditUserModel = editUser;
-            _viewModel.Users = new List<IUser> { currentAdmin, otherUser };
+            _viewModel.Users = [currentAdmin, otherUser];
 
             _mockUsersMediator.Setup(m => m.Update(editUser)).ReturnsAsync(otherUser);
-            _mockUsersMediator.Setup(m => m.GetAllUsers()).ReturnsAsync(new List<IUser> { currentAdmin, otherUser });
+            _mockUsersMediator.Setup(m => m.GetAllUsers()).ReturnsAsync([currentAdmin, otherUser]);
 
             // Act
             var result = await _viewModel.UpdateUser();
@@ -465,10 +471,10 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
             // Arrange
             var userToDelete = MockDataFactory.Users.CreateValid(2, "usertoDelete");
             _viewModel.SelectedUser = userToDelete;
-            _viewModel.Users = new List<IUser> { _mockAuthService.Object.CurrentUser as IUser, userToDelete };
+            _viewModel.Users = [(IUser)_mockAuthService.Object.CurrentUser, userToDelete];
 
             _mockUsersMediator.Setup(m => m.Delete(userToDelete.Id)).Returns(Task.CompletedTask);
-            _mockUsersMediator.Setup(m => m.GetAllUsers()).ReturnsAsync(new List<IUser> { _mockAuthService.Object.CurrentUser as IUser });
+            _mockUsersMediator.Setup(m => m.GetAllUsers()).ReturnsAsync([(IUser)_mockAuthService.Object.CurrentUser]);
 
             // Act
             var result = await _viewModel.DeleteUser();
@@ -520,10 +526,10 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
             var otherUser = MockDataFactory.Users.CreateValid(2, "otheruser");
             _mockAuthService.Setup(a => a.CurrentUser).Returns(currentAdmin);
             _viewModel.SelectedUser = otherUser;
-            _viewModel.Users = new List<IUser> { currentAdmin, otherUser };
+            _viewModel.Users = [currentAdmin, otherUser];
 
             _mockUsersMediator.Setup(m => m.Delete(otherUser.Id)).Returns(Task.CompletedTask);
-            _mockUsersMediator.Setup(m => m.GetAllUsers()).ReturnsAsync(new List<IUser> { currentAdmin });
+            _mockUsersMediator.Setup(m => m.GetAllUsers()).ReturnsAsync([currentAdmin]);
 
             // Act
             var result = await _viewModel.DeleteUser();
