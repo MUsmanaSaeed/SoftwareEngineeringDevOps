@@ -20,7 +20,7 @@ namespace SoftwareEngineeringDevOps.Tests.IntegrationTests.E2E
             _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
             {
                 Headless = true,
-                Args = new[] { "--no-sandbox", "--disable-setuid-sandbox" }
+                Args = ["--no-sandbox", "--disable-setuid-sandbox"]
             });
         }
 

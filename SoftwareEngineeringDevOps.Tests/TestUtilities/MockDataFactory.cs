@@ -1,5 +1,6 @@
 using SoftwareEngineeringDevOps.App.Bricks;
 using SoftwareEngineeringDevOps.App.BrickOrders;
+using SoftwareEngineeringDevOps.App.BrickOrdersReceived;
 using SoftwareEngineeringDevOps.App.Manufacturers;
 using SoftwareEngineeringDevOps.App.Users;
 
@@ -145,6 +146,32 @@ namespace SoftwareEngineeringDevOps.Tests.TestUtilities
                     ExpectedDate = DateTime.UtcNow.AddDays(30),
                     CancelledDate = isCancelled ? DateTime.UtcNow : null
                 }, createdByUser);
+            }
+        }
+
+        public static class BrickOrdersReceived
+        {
+            public static NewBrickOrderReceived CreateValidNew(long brickOrderId = 1, int bricksReceived = 500)
+            {
+                return new NewBrickOrderReceived
+                {
+                    BrickOrderId = brickOrderId,
+                    BricksReceived = bricksReceived,
+                    ReceivedDate = DateTime.UtcNow,
+                    ReceivedById = 1
+                };
+            }
+
+            public static BrickOrderReceived CreateValid(long id = 1, long brickOrderId = 1, int bricksReceived = 500)
+            {
+                var receivedByUser = Users.CreateValid(1);
+                return BrickOrderReceived.FromDBO(new SoftwareEngineeringDevOps.App.BrickOrdersReceived.Persistence.DBOs.BrickOrderReceivedDBO
+                {
+                    Id = id,
+                    BrickOrderId = brickOrderId,
+                    BricksReceived = bricksReceived,
+                    ReceivedDate = DateTime.UtcNow
+                }, receivedByUser);
             }
         }
 
