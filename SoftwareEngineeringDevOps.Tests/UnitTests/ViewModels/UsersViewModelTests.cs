@@ -351,19 +351,21 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
         public async Task UpdateUser_ShouldUpdateUser_WhenValidDataProvided()
         {
             // Arrange
-            var existingUser = MockDataFactory.Users.CreateValid(1, "testuser");
-            var editUser = new EditUser(existingUser);
-            editUser.FirstName = "Updated";
+            User existingUser = MockDataFactory.Users.CreateValid(1, "testuser", isAdmin: true);
+            EditUser editUser = new(existingUser)
+            {
+                FirstName = "Updated"
+            };
 
             _viewModel.EditUserModel = editUser;
-            _viewModel.Users = new List<IUser> { existingUser };
+            _viewModel.Users = [existingUser];
 
-            var updatedUser = MockDataFactory.Users.CreateValid(1, "testuser");
+            User updatedUser = MockDataFactory.Users.CreateValid(1, "testuser");
             _mockUsersMediator.Setup(m => m.Update(editUser)).ReturnsAsync(updatedUser);
-            _mockUsersMediator.Setup(m => m.GetAllUsers()).ReturnsAsync(new List<IUser> { updatedUser });
+            _mockUsersMediator.Setup(m => m.GetAllUsers()).ReturnsAsync([updatedUser]);
 
             // Act
-            var result = await _viewModel.UpdateUser();
+            bool result = await _viewModel.UpdateUser();
 
             // Assert
             result.Should().BeTrue();

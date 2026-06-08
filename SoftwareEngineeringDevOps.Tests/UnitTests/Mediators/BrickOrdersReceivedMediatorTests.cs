@@ -188,7 +188,7 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.Mediators
             var result = await _mediator.Insert(newReceivedOrder);
 
             // Assert
-            result.ReceivedDate.Should().BeSameDateAs(newReceivedOrder.ReceivedDate);
+            result.ReceivedDate.ToUtc().Should().BeSameDateAs(newReceivedOrder.ReceivedDate.ToUtc());
             _mockRepository.Verify(r => r.Insert(newReceivedOrder), Times.Once);
         }
 

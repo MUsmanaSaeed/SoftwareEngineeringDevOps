@@ -73,12 +73,14 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             if (errors.Count > 0)
             {
                 ValidationErrors = errors;
+                ShowAddModal = true;
                 return false;
             }
 
             if (Users.Any(u => u.Username.Equals(NewUserModel.Username, StringComparison.OrdinalIgnoreCase)))
             {
                 ValidationErrors.Add("A user with that username already exists.");
+                ShowAddModal = true;
                 return false;
             }
 
@@ -112,12 +114,14 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             if (errors.Count > 0)
             {
                 ValidationErrors = errors;
+                ShowEditModal = true;
                 return false;
             }
 
             if (Users.Any(u => u.Id != EditUserModel.Id && u.Username.Equals(EditUserModel.Username, StringComparison.OrdinalIgnoreCase)))
             {
                 ValidationErrors.Add("A user with that username already exists.");
+                ShowEditModal = true;
                 return false;
             }
 
@@ -125,6 +129,7 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
             if (EditUserModel.Id == CurrentUserId && !EditUserModel.IsAdmin)
             {
                 ValidationErrors.Add("You cannot remove your own admin privileges.");
+                ShowEditModal = true;
                 return false;
             }
 

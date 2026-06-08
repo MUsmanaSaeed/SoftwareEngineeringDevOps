@@ -295,7 +295,10 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
 
             var createdManufacturer = MockDataFactory.Manufacturers.CreateValid(1, "NewManufacturer");
             _mockManufacturersMediator.Setup(m => m.Insert(It.IsAny<NewManufacturer>())).ReturnsAsync(createdManufacturer);
-            _mockManufacturersMediator.Setup(m => m.GetAllManufacturers()).ReturnsAsync(new List<IManufacturer> { createdManufacturer });
+            // GetAllManufacturers should return empty list before insert, then return the created manufacturer after
+            _mockManufacturersMediator.SetupSequence(m => m.GetAllManufacturers())
+                .ReturnsAsync(Enumerable.Empty<IManufacturer>())
+                .ReturnsAsync([createdManufacturer]);
             _mockBricksMediator.Setup(m => m.GetBricksByManufacturerId(1)).ReturnsAsync(Enumerable.Empty<IBrick>());
 
             // Act
@@ -320,6 +323,10 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
             var newManufacturer = new NewManufacturer { Name = "ExistingName", Address1 = "123 Street", Postcode = "12345", PhoneNo = "+1234567890", Email = "test@example.com" };
             _viewModel.NewManufacturerModel = newManufacturer;
             _viewModel.Manufacturers = new List<IManufacturer> { existingManufacturer };
+
+            // Mock GetAllManufacturers to return the existing manufacturer for duplicate name validation
+            _mockManufacturersMediator.Setup(m => m.GetAllManufacturers())
+                .ReturnsAsync(new List<IManufacturer> { existingManufacturer });
 
             // Act
             var result = await _viewModel.AddManufacturer();

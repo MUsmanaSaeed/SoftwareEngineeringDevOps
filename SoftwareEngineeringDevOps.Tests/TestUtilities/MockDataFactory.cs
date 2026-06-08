@@ -3,6 +3,8 @@ using SoftwareEngineeringDevOps.App.BrickOrders;
 using SoftwareEngineeringDevOps.App.BrickOrdersReceived;
 using SoftwareEngineeringDevOps.App.Manufacturers;
 using SoftwareEngineeringDevOps.App.Users;
+using SoftwareEngineeringDevOps.App.BrickOrders.Persistence.DBOs;
+using SoftwareEngineeringDevOps.App.Bricks.Persistence.DBOs;
 
 namespace SoftwareEngineeringDevOps.Tests.TestUtilities
 {
@@ -102,7 +104,7 @@ namespace SoftwareEngineeringDevOps.Tests.TestUtilities
             public static Brick CreateValid(long id = 1, long manufacturerId = 1, string name = "Test Brick")
             {
                 var manufacturer = Manufacturers.CreateValid(manufacturerId, "Test Manufacturer");
-                return Brick.FromDBO(new SoftwareEngineeringDevOps.App.Bricks.Persistence.DBOs.BrickDBO
+                return Brick.FromDBO(new BrickDBO
                 {
                     Id = id,
                     Name = name,
@@ -127,16 +129,16 @@ namespace SoftwareEngineeringDevOps.Tests.TestUtilities
                 return new NewBrickOrder
                 {
                     BrickId = brickId,
-                    OrderNo = $"ORD-{DateTime.UtcNow:yyyyMMdd}-001",
+                    OrderNo = $"548796",
                     BricksOrdered = quantity,
                     OrderedDate = DateTime.UtcNow
                 };
             }
 
-            public static BrickOrder CreateValid(long id = 1, long brickId = 1, string orderNo = "ORD-20260101-001", bool isCancelled = false)
+            public static BrickOrder CreateValid(long id = 1, long brickId = 1, string orderNo = "123456", bool isCancelled = false)
             {
                 var createdByUser = Users.CreateValid(1);
-                return BrickOrder.FromDBO(new SoftwareEngineeringDevOps.App.BrickOrders.Persistence.DBOs.BrickOrderDBO
+                return BrickOrder.FromDBO(new BrickOrderDBO
                 {
                     Id = id,
                     OrderNo = orderNo,

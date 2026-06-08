@@ -161,7 +161,7 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.Mediators
         {
             // Arrange
             var newOrder = MockDataFactory.BrickOrders.CreateValidNew(1, 1000);
-            var expectedOrder = MockDataFactory.BrickOrders.CreateValid(1, 1, "ORD-20260101-001");
+            var expectedOrder = MockDataFactory.BrickOrders.CreateValid(1, 1, newOrder.OrderNo);
             _mockRepository.Setup(r => r.Insert(newOrder)).Returns(expectedOrder);
 
             // Act
@@ -179,7 +179,7 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.Mediators
         {
             // Arrange
             var newOrder = MockDataFactory.BrickOrders.CreateValidNew(2, 500);
-            var expectedOrder = MockDataFactory.BrickOrders.CreateValid(1, 2, "ORD-20260101-001");
+            var expectedOrder = MockDataFactory.BrickOrders.CreateValid(1, 2, newOrder.OrderNo);
             _mockRepository.Setup(r => r.Insert(newOrder)).Returns(expectedOrder);
 
             // Act
@@ -187,7 +187,7 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.Mediators
 
             // Assert
             result.OrderNo.Should().NotBeNullOrEmpty();
-            result.OrderedDate.Date.Should().Be(newOrder.OrderedDate.Date);
+            result.OrderedDate.ToUtc().Should().BeSameDateAs(newOrder.OrderedDate.ToUtc());
             _mockRepository.Verify(r => r.Insert(newOrder), Times.Once);
         }
 

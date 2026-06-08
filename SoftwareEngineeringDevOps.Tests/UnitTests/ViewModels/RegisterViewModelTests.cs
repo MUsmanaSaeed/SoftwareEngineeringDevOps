@@ -202,13 +202,13 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
             // Arrange
             _viewModel.FirstName = "John Michael";
             _viewModel.LastName = "Van Doe";
-            _mockUsersMediator.Setup(m => m.GetUserByUsername("johnmichelvandoe")).ReturnsAsync((IUser?)null);
+            _mockUsersMediator.Setup(m => m.GetUserByUsername("johnmichaelvandoe")).ReturnsAsync((IUser?)null);
 
             // Act
             await _viewModel.GenerateUsernameAsync();
 
             // Assert
-            _viewModel.Username.Should().Be("johnmichelvandoe");
+            _viewModel.Username.Should().Be("johnmichaelvandoe");
         }
 
         [Fact]
