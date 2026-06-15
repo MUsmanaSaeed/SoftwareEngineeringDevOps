@@ -4,6 +4,7 @@
 @inject IBricksMediator BricksMediator
 @inject IManufacturersMediator ManufacturersMediator
 @inject IBrickOrdersMediator OrdersMediator
+@inject BricksViewModel ViewModel
 @inject NavigationManager Navigation
 @inject IToastService ToastService
 
@@ -339,8 +340,6 @@
 }
 
 @code {
-    BricksViewModel ViewModel { get; set; } = null!;
-
     [SupplyParameterFromQuery(Name = "action")]
     public string? Action { get; set; }
 
@@ -349,7 +348,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        ViewModel = new BricksViewModel(BricksMediator, ManufacturersMediator, OrdersMediator, AuthService);
         await ViewModel.LoadBricks();
 
         if (SelectedId.HasValue)

@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Moq;
 using SoftwareEngineeringDevOps.App.Auth;
 using SoftwareEngineeringDevOps.App.Users;
@@ -14,17 +15,19 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
     {
         private readonly Mock<IUsersMediator> _mockUsersMediator;
         private readonly Mock<IAuthService> _mockAuthService;
+        private readonly Mock<Microsoft.Extensions.Logging.ILogger<UsersViewModel>> _mockLogger;
         private readonly UsersViewModel _viewModel;
 
         public UsersViewModelTests()
         {
             _mockUsersMediator = new Mock<IUsersMediator>();
             _mockAuthService = new Mock<IAuthService>();
+            _mockLogger = new Mock<Microsoft.Extensions.Logging.ILogger<UsersViewModel>>();
 
             // Setup default current user
             _mockAuthService.Setup(a => a.CurrentUser).Returns(MockDataFactory.Users.CreateAdmin());
 
-            _viewModel = new UsersViewModel(_mockUsersMediator.Object, _mockAuthService.Object);
+            _viewModel = new UsersViewModel(_mockUsersMediator.Object, _mockAuthService.Object, _mockLogger.Object);
         }
 
         #region LoadUsers Tests
@@ -582,7 +585,7 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
             // Arrange
             var adminUser = MockDataFactory.Users.CreateValid(1, "admin", isAdmin: true);
             _mockAuthService.Setup(a => a.CurrentUser).Returns(adminUser);
-            var viewModel = new UsersViewModel(_mockUsersMediator.Object, _mockAuthService.Object);
+            var viewModel = new UsersViewModel(_mockUsersMediator.Object, _mockAuthService.Object, _mockLogger.Object);
 
             // Act
             var role = viewModel.CurrentUserRole;
@@ -597,7 +600,7 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
             // Arrange
             var editorUser = MockDataFactory.Users.CreateValid(1, "editor", isEditor: true);
             _mockAuthService.Setup(a => a.CurrentUser).Returns(editorUser);
-            var viewModel = new UsersViewModel(_mockUsersMediator.Object, _mockAuthService.Object);
+            var viewModel = new UsersViewModel(_mockUsersMediator.Object, _mockAuthService.Object, _mockLogger.Object);
 
             // Act
             var role = viewModel.CurrentUserRole;
@@ -612,7 +615,7 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
             // Arrange
             var standardUser = MockDataFactory.Users.CreateValid(1, "standard");
             _mockAuthService.Setup(a => a.CurrentUser).Returns(standardUser);
-            var viewModel = new UsersViewModel(_mockUsersMediator.Object, _mockAuthService.Object);
+            var viewModel = new UsersViewModel(_mockUsersMediator.Object, _mockAuthService.Object, _mockLogger.Object);
 
             // Act
             var role = viewModel.CurrentUserRole;
@@ -626,7 +629,7 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
         {
             // Arrange
             _mockAuthService.Setup(a => a.CurrentUser).Returns((IUser?)null);
-            var viewModel = new UsersViewModel(_mockUsersMediator.Object, _mockAuthService.Object);
+            var viewModel = new UsersViewModel(_mockUsersMediator.Object, _mockAuthService.Object, _mockLogger.Object);
 
             // Act
             var role = viewModel.CurrentUserRole;
@@ -645,7 +648,7 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
             // Arrange
             var user = MockDataFactory.Users.CreateValid(5, "testuser");
             _mockAuthService.Setup(a => a.CurrentUser).Returns(user);
-            var viewModel = new UsersViewModel(_mockUsersMediator.Object, _mockAuthService.Object);
+            var viewModel = new UsersViewModel(_mockUsersMediator.Object, _mockAuthService.Object, _mockLogger.Object);
 
             // Act
             var userId = viewModel.CurrentUserId;
@@ -659,7 +662,7 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
         {
             // Arrange
             _mockAuthService.Setup(a => a.CurrentUser).Returns((IUser?)null);
-            var viewModel = new UsersViewModel(_mockUsersMediator.Object, _mockAuthService.Object);
+            var viewModel = new UsersViewModel(_mockUsersMediator.Object, _mockAuthService.Object, _mockLogger.Object);
 
             // Act
             var userId = viewModel.CurrentUserId;

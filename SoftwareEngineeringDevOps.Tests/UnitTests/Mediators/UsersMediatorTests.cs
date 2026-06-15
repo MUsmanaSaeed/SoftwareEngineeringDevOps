@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Moq;
 using SoftwareEngineeringDevOps.App.Users;
 using SoftwareEngineeringDevOps.App.Users.Repository;
@@ -12,12 +13,14 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.Mediators
     public class UsersMediatorTests
     {
         private readonly Mock<IUsersRepository> _mockRepository;
+        private readonly Mock<ILogger<UsersMediator>> _mockLogger;
         private readonly UsersMediator _mediator;
 
         public UsersMediatorTests()
         {
             _mockRepository = new Mock<IUsersRepository>();
-            _mediator = new UsersMediator(_mockRepository.Object);
+            _mockLogger = new Mock<ILogger<UsersMediator>>();
+            _mediator = new UsersMediator(_mockRepository.Object, _mockLogger.Object);
         }
 
         #region GetAllUsers Tests

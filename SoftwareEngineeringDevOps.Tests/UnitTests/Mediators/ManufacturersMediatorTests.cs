@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Moq;
 using SoftwareEngineeringDevOps.App.Manufacturers;
 using SoftwareEngineeringDevOps.App.Manufacturers.Repository;
@@ -12,12 +13,14 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.Mediators
     public class ManufacturersMediatorTests
     {
         private readonly Mock<IManufacturersRepository> _mockRepository;
+        private readonly Mock<ILogger<ManufacturersMediator>> _mockLogger;
         private readonly ManufacturersMediator _mediator;
 
         public ManufacturersMediatorTests()
         {
             _mockRepository = new Mock<IManufacturersRepository>();
-            _mediator = new ManufacturersMediator(_mockRepository.Object);
+            _mockLogger = new Mock<ILogger<ManufacturersMediator>>();
+            _mediator = new ManufacturersMediator(_mockRepository.Object, _mockLogger.Object);
         }
 
         #region GetAllManufacturers Tests

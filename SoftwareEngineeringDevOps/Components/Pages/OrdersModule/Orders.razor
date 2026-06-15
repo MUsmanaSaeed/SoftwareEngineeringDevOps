@@ -4,6 +4,7 @@
 @inject IBrickOrdersMediator OrdersMediator
 @inject IBrickOrdersReceivedMediator ReceivedMediator
 @inject IBricksMediator BricksMediator
+@inject OrdersViewModel ViewModel
 @inject NavigationManager Navigation
 @inject IToastService ToastService
 
@@ -435,8 +436,6 @@
 }
 
 @code {
-    OrdersViewModel ViewModel { get; set; } = null!;
-
     [Parameter]
     public string? QueryOrderNo { get; set; }
 
@@ -445,7 +444,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        ViewModel = new OrdersViewModel(OrdersMediator, ReceivedMediator, BricksMediator, AuthService);
         await ViewModel.LoadOrders();
 
         if (!string.IsNullOrEmpty(QueryOrderNo))

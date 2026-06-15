@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Moq;
 using SoftwareEngineeringDevOps.App.Auth;
 using SoftwareEngineeringDevOps.App.Users;
@@ -14,13 +15,15 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
     {
         private readonly Mock<IUsersMediator> _mockUsersMediator;
         private readonly Mock<IAuthService> _mockAuthService;
+        private readonly Mock<ILogger<RegisterViewModel>> _mockLogger;
         private readonly RegisterViewModel _viewModel;
 
         public RegisterViewModelTests()
         {
             _mockUsersMediator = new Mock<IUsersMediator>();
             _mockAuthService = new Mock<IAuthService>();
-            _viewModel = new RegisterViewModel(_mockUsersMediator.Object, _mockAuthService.Object);
+            _mockLogger = new Mock<ILogger<RegisterViewModel>>();
+            _viewModel = new RegisterViewModel(_mockUsersMediator.Object, _mockAuthService.Object, _mockLogger.Object);
         }
 
         #region ExecuteRegister Tests - Happy Path

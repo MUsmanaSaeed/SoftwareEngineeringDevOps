@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Moq;
 using SoftwareEngineeringDevOps.App.Auth;
 using SoftwareEngineeringDevOps.Components.ViewModels;
@@ -12,12 +13,14 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
     public class LoginViewModelTests
     {
         private readonly Mock<IAuthService> _mockAuthService;
+        private readonly Mock<ILogger<LoginViewModel>> _mockLogger;
         private readonly LoginViewModel _viewModel;
 
         public LoginViewModelTests()
         {
             _mockAuthService = new Mock<IAuthService>();
-            _viewModel = new LoginViewModel(_mockAuthService.Object);
+            _mockLogger = new Mock<ILogger<LoginViewModel>>();
+            _viewModel = new LoginViewModel(_mockAuthService.Object, _mockLogger.Object);
         }
 
         #region ExecuteLogin Tests - Happy Path

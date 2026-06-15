@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Moq;
 using SoftwareEngineeringDevOps.App.Bricks;
 using SoftwareEngineeringDevOps.App.Bricks.Repository;
@@ -12,12 +13,14 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.Mediators
     public class BricksMediatorTests
     {
         private readonly Mock<IBricksRepository> _mockRepository;
+        private readonly Mock<ILogger<BricksMediator>> _mockLogger;
         private readonly BricksMediator _mediator;
 
         public BricksMediatorTests()
         {
             _mockRepository = new Mock<IBricksRepository>();
-            _mediator = new BricksMediator(_mockRepository.Object);
+            _mockLogger = new Mock<ILogger<BricksMediator>>();
+            _mediator = new BricksMediator(_mockRepository.Object, _mockLogger.Object);
         }
 
         #region GetAllBricks Tests
