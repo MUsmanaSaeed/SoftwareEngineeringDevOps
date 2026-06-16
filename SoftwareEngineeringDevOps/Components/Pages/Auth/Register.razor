@@ -85,6 +85,10 @@
 
     private async Task HandleRegister()
     {
+        ViewModel.FirstName = NormalizeName(ViewModel.FirstName);
+        ViewModel.LastName = NormalizeName(ViewModel.LastName);
+        await ViewModel.GenerateUsernameAsync();
+
         var success = await ViewModel.ExecuteRegister();
         if (success)
         {
@@ -98,20 +102,20 @@
             await HandleRegister();
     }
 
-    private async Task HandleFirstNameInput(ChangeEventArgs e)
+    private void HandleFirstNameInput(ChangeEventArgs e)
     {
-        ViewModel.FirstName = e.Value?.ToString().ToTitleCase() ?? string.Empty;
-        await ViewModel.GenerateUsernameAsync();
+        ViewModel.FirstName = NormalizeName(e.Value?.ToString());
     }
 
-    private async Task HandleLastNameInput(ChangeEventArgs e)
+    private void HandleLastNameInput(ChangeEventArgs e)
     {
-        ViewModel.LastName = e.Value?.ToString().ToTitleCase() ?? string.Empty;
-        await ViewModel.GenerateUsernameAsync();
+        ViewModel.LastName = NormalizeName(e.Value?.ToString());
     }
 
     private async Task HandleNameBlur()
     {
+        ViewModel.FirstName = NormalizeName(ViewModel.FirstName);
+        ViewModel.LastName = NormalizeName(ViewModel.LastName);
         await ViewModel.GenerateUsernameAsync();
     }
 
@@ -121,5 +125,10 @@
         ViewModel.Username = value;
         // If the user clears the field, allow auto-generation to take over again
         ViewModel.IsUsernameManuallyEdited = !string.IsNullOrEmpty(value);
+    }
+
+    private static string NormalizeName(string? value)
+    {
+        return (value ?? string.Empty).ToTitleCase();
     }
 }
