@@ -29,17 +29,15 @@
 
     <div class="form-group">
         <label for="firstname">First Name</label>
-        <input id="firstname" type="text" class="form-input"
-               value="@ViewModel.FirstName"
-               @oninput="HandleFirstNameInput"
+        <input id="firstname" type="text" class="form-input" style="text-transform: capitalize;"
+               @bind="ViewModel.FirstName"
                @onblur="HandleNameBlur" />
     </div>
 
     <div class="form-group">
         <label for="lastname">Last Name</label>
-        <input id="lastname" type="text" class="form-input"
-               value="@ViewModel.LastName"
-               @oninput="HandleLastNameInput"
+        <input id="lastname" type="text" class="form-input" style="text-transform: capitalize;"
+               @bind="ViewModel.LastName"
                @onblur="HandleNameBlur" />
     </div>
 
@@ -100,16 +98,6 @@
     {
         if (e.Key == "Enter" && !ViewModel.IsLoading)
             await HandleRegister();
-    }
-
-    private void HandleFirstNameInput(ChangeEventArgs e)
-    {
-        ViewModel.FirstName = NormalizeName(e.Value?.ToString());
-    }
-
-    private void HandleLastNameInput(ChangeEventArgs e)
-    {
-        ViewModel.LastName = NormalizeName(e.Value?.ToString());
     }
 
     private async Task HandleNameBlur()
