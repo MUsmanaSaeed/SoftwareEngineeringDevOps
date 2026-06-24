@@ -160,7 +160,7 @@ Tests are configured to run headlessly:
 
 ### Environment Variables
 - `ASPNETCORE_ENVIRONMENT=Test`
-- `BASE_URL=http://localhost:5000` (for E2E)
+- `BASE_URL=https://acs-brick-management.onrender.com` (for E2E)
 - PostgreSQL connection strings (CI only)
 
 ## Best Practices Followed
