@@ -129,8 +129,8 @@ jobs:
 
       - name: Install Playwright browsers
         run: |
-          dotnet tool install --global Microsoft.Playwright.CLI
-          playwright install chromium --with-deps
+          dotnet tool install --global Microsoft.Playwright.CLI --version 1.60.0
+          playwright install chromium --with-deps -p SoftwareEngineeringDevOps.Tests/SoftwareEngineeringDevOps.Tests.csproj
 
       - name: Restore dependencies
         run: |
