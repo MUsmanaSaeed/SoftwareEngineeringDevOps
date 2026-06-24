@@ -54,7 +54,10 @@ namespace SoftwareEngineeringDevOps.App.Users
 
         public async Task<IUser?> GetUserByUsername(string username)
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(username);
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                return null;
+            }
 
             try
             {

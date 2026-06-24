@@ -9,6 +9,7 @@ using SoftwareEngineeringDevOps.App.BrickOrders;
 using SoftwareEngineeringDevOps.App.Manufacturers;
 using SoftwareEngineeringDevOps.Components.Pages.BricksModule;
 using SoftwareEngineeringDevOps.Components.Shared;
+using SoftwareEngineeringDevOps.Components.ViewModels;
 using SoftwareEngineeringDevOps.Tests.TestUtilities;
 
 namespace SoftwareEngineeringDevOps.Tests.IntegrationTests.Components
@@ -38,6 +39,14 @@ namespace SoftwareEngineeringDevOps.Tests.IntegrationTests.Components
             Services.AddSingleton(_mockOrdersMediator.Object);
             Services.AddSingleton(_mockAuthService.Object);
             Services.AddSingleton(_mockToastService.Object);
+
+            // Register BricksViewModel using the mock services
+            Services.AddSingleton(sp => new BricksViewModel(
+                sp.GetRequiredService<IBricksMediator>(),
+                sp.GetRequiredService<IManufacturersMediator>(),
+                sp.GetRequiredService<IBrickOrdersMediator>(),
+                sp.GetRequiredService<IAuthService>()
+            ));
         }
 
         #region Component Rendering Tests
