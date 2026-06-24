@@ -98,6 +98,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -112,24 +127,35 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Install Playwright browsers
+        run: |
+          dotnet tool install --global Microsoft.Playwright --version 1.60.0
+          playwright install chromium --with-deps -p SoftwareEngineeringDevOps.Tests/SoftwareEngineeringDevOps.Tests.csproj
+
       - name: Restore dependencies
         run: |
           dotnet restore SoftwareEngineeringDevOps/SoftwareEngineeringDevOps.csproj
           dotnet restore SoftwareEngineeringDevOps.Tests/SoftwareEngineeringDevOps.Tests.csproj
 
-      - name: Build test project
-        run: dotnet build SoftwareEngineeringDevOps.Tests/SoftwareEngineeringDevOps.Tests.csproj --configuration Release --no-restore
+      - name: Build application
+        run: dotnet build SoftwareEngineeringDevOps/SoftwareEngineeringDevOps.csproj --configuration Release --no-restore
 
-      - name: Install Playwright browsers
-        run: npx -y playwright@1.60.0 install chromium --with-deps
-
-      - name: Wait for Render deployment
+      - name: Start application
         run: |
-          echo "Waiting for Render deployment to start..."
-          timeout 60 bash -c 'until curl -s "$BASE_URL" > /dev/null; do sleep 2; done' || exit 1
-          echo "Application is running"
+          cd SoftwareEngineeringDevOps
+          dotnet run --configuration Release --no-build &
+          echo $! > /tmp/app.pid
+          sleep 10
         env:
-          BASE_URL: ${{ vars.RENDER_PR_BASE_URL }}
+          ASPNETCORE_ENVIRONMENT: Test
+          ASPNETCORE_URLS: http://localhost:5000
+          ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=testdb;Username=testuser;******"
+
+      - name: Wait for application startup
+        run: |
+          echo "Waiting for application to start..."
+          timeout 60 bash -c 'until curl -s http://localhost:5000 > /dev/null; do sleep 2; done' || exit 1
+          echo "Application is running"
 
       - name: Run E2E tests
         run: |
@@ -140,7 +166,14 @@ jobs:
             --logger "console;verbosity=detailed" \
             --filter "FullyQualifiedName~E2E"
         env:
-          BASE_URL: ${{ vars.RENDER_PR_BASE_URL }}
+          BASE_URL: http://localhost:5000
+
+      - name: Stop application
+        if: always()
+        run: |
+          if [ -f /tmp/app.pid ]; then
+            kill $(cat /tmp/app.pid) || true
+          fi
 
       - name: Upload E2E test results
         uses: actions/upload-artifact@v4

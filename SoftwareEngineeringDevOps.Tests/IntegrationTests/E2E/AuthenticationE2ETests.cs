@@ -12,7 +12,7 @@ namespace SoftwareEngineeringDevOps.Tests.IntegrationTests.E2E
     {
         private IPlaywright? _playwright;
         private IBrowser? _browser;
-        private static readonly string BaseUrl = Environment.GetEnvironmentVariable("BASE_URL") ?? "https://acs-brick-management.onrender.com";
+        private const string BaseUrl = "http://localhost:5000"; // Will be configured via environment
 
         public async ValueTask InitializeAsync()
         {
