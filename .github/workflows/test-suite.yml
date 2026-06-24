@@ -127,15 +127,16 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Playwright browsers
-        run: |
-          dotnet tool install --global Microsoft.Playwright.CLI --version 1.60.0
-          playwright install chromium --with-deps
-
       - name: Restore dependencies
         run: |
           dotnet restore SoftwareEngineeringDevOps/SoftwareEngineeringDevOps.csproj
           dotnet restore SoftwareEngineeringDevOps.Tests/SoftwareEngineeringDevOps.Tests.csproj
+
+      - name: Build test project
+        run: dotnet build SoftwareEngineeringDevOps.Tests/SoftwareEngineeringDevOps.Tests.csproj --configuration Release --no-restore
+
+      - name: Install Playwright browsers
+        run: ./SoftwareEngineeringDevOps.Tests/bin/Release/net10.0/playwright.sh install chromium --with-deps
 
       - name: Build application
         run: dotnet build SoftwareEngineeringDevOps/SoftwareEngineeringDevOps.csproj --configuration Release --no-restore
