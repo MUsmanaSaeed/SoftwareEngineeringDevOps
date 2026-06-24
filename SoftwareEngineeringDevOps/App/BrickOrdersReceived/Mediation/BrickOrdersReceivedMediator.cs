@@ -1,50 +1,112 @@
+using Microsoft.Extensions.Logging;
 using SoftwareEngineeringDevOps.App.BrickOrdersReceived.Repository;
 
 namespace SoftwareEngineeringDevOps.App.BrickOrdersReceived
 {
     public class BrickOrdersReceivedMediator : IBrickOrdersReceivedMediator
     {
-        IBrickOrdersReceivedRepository Repository { get; }
+        private readonly IBrickOrdersReceivedRepository _repository;
+        private readonly ILogger<BrickOrdersReceivedMediator> _logger;
 
-        public BrickOrdersReceivedMediator(IBrickOrdersReceivedRepository repository)
+        public BrickOrdersReceivedMediator(IBrickOrdersReceivedRepository repository, ILogger<BrickOrdersReceivedMediator> logger)
         {
-            Repository = repository;
+            ArgumentNullException.ThrowIfNull(repository);
+            ArgumentNullException.ThrowIfNull(logger);
+            _repository = repository;
+            _logger = logger;
         }
 
         public async Task<IEnumerable<IBrickOrderReceived>> GetAllBrickOrdersReceived()
         {
-            await Task.CompletedTask;
-            return Repository.ListAll();
+            try
+            {
+                await Task.CompletedTask;
+                var ordersReceived = _repository.ListAll();
+                return ordersReceived;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Mediator: Failed to get all brick orders received");
+                throw;
+            }
         }
 
         public async Task<IBrickOrderReceived?> GetBrickOrderReceivedById(long id)
         {
-            await Task.CompletedTask;
-            return Repository.GetById(id);
+            try
+            {
+                await Task.CompletedTask;
+                var received = _repository.GetById(id);
+                if (received == null)
+                    _logger.LogWarning("Mediator: Brick order received not found: {ReceivedId}", id);
+                return received;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Mediator: Failed to get brick order received by ID: {ReceivedId}", id);
+                throw;
+            }
         }
 
         public async Task<IEnumerable<IBrickOrderReceived>> GetBrickOrdersReceivedByBrickOrderId(long brickOrderId)
         {
-            await Task.CompletedTask;
-            return Repository.GetByBrickOrderId(brickOrderId);
+            try
+            {
+                await Task.CompletedTask;
+                var ordersReceived = _repository.GetByBrickOrderId(brickOrderId);
+                return ordersReceived;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Mediator: Failed to get brick orders received by order ID: {BrickOrderId}", brickOrderId);
+                throw;
+            }
         }
 
         public async Task<IBrickOrderReceived> Insert(NewBrickOrderReceived brickOrderReceived)
         {
-            await Task.CompletedTask;
-            return Repository.Insert(brickOrderReceived);
+            ArgumentNullException.ThrowIfNull(brickOrderReceived);
+            try
+            {
+                await Task.CompletedTask;
+                var created = _repository.Insert(brickOrderReceived);
+                return created;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Mediator: Failed to insert brick order received: Order ID: {BrickOrderId}", brickOrderReceived.BrickOrderId);
+                throw;
+            }
         }
 
         public async Task<IBrickOrderReceived> Update(EditBrickOrderReceived brickOrderReceived)
         {
-            await Task.CompletedTask;
-            return Repository.Update(brickOrderReceived);
+            ArgumentNullException.ThrowIfNull(brickOrderReceived);
+            try
+            {
+                await Task.CompletedTask;
+                var updated = _repository.Update(brickOrderReceived);
+                return updated;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Mediator: Failed to update brick order received: {ReceivedId}", brickOrderReceived.Id);
+                throw;
+            }
         }
 
         public async Task Delete(long id)
         {
-            await Task.CompletedTask;
-            Repository.Delete(id);
+            try
+            {
+                await Task.CompletedTask;
+                _repository.Delete(id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Mediator: Failed to delete brick order received: {ReceivedId}", id);
+                throw;
+            }
         }
     }
 }

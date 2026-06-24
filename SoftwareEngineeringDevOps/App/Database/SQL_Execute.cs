@@ -1,12 +1,21 @@
-﻿using Npgsql;
+﻿using Microsoft.Extensions.Logging;
+using Npgsql;
 using System.Data;
 using System.Reflection;
 
 namespace SoftwareEngineeringDevOps.App.Database
 {
-    public static class SQL_Execute
+    public class SQL_Execute
     {
-        static object? ConvertDatabaseValueToPropertyType(PropertyInfo property, object value)
+        private readonly ILogger<SQL_Execute> _logger;
+
+        public SQL_Execute(ILogger<SQL_Execute> logger)
+        {
+            ArgumentNullException.ThrowIfNull(logger);
+            _logger = logger;
+        }
+
+        private static object? ConvertDatabaseValueToPropertyType(PropertyInfo property, object value)
         {
             Type propertyType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
 
@@ -26,63 +35,137 @@ namespace SoftwareEngineeringDevOps.App.Database
             return value;
         }
 
-        static void AssignPropertyValue<T>(T result, PropertyInfo property, object value)
+        private static void AssignPropertyValue<T>(T result, PropertyInfo property, object value)
         {
             object? convertedValue = ConvertDatabaseValueToPropertyType(property, value);
             result?.GetType().GetProperty(property.Name)?.SetValue(result, convertedValue);
         }
 
-        static List<T>? Select<T>(NpgsqlCommand command, bool IsStoredProcedure)
+        private List<T>? Select<T>(NpgsqlCommand command, bool isStoredProcedure, string query)
         {
-            PropertyInfo[] properties = typeof(T).GetProperties();
-
-            if (IsStoredProcedure)
-                command.CommandType = CommandType.StoredProcedure;
-            else
-                command.CommandType = CommandType.Text;
-            using NpgsqlDataReader reader = command.ExecuteReader();
-
-            List<T>? results = [];
-            while (reader.Read())
+            try
             {
-                T result = Activator.CreateInstance<T>();
-                foreach (PropertyInfo property in properties)
+                PropertyInfo[] properties = typeof(T).GetProperties();
+
+                if (isStoredProcedure)
+                    command.CommandType = CommandType.StoredProcedure;
+                else
+                    command.CommandType = CommandType.Text;
+
+                using NpgsqlDataReader reader = command.ExecuteReader();
+
+                List<T>? results = [];
+                int rowCount = 0;
+
+                while (reader.Read())
                 {
-                    if (reader[property.Name] == DBNull.Value)
-                        result?.GetType().GetProperty(property.Name)?.SetValue(result, null);
-                    else
-                        AssignPropertyValue(result, property, reader[property.Name]);
+                    try
+                    {
+                        T result = Activator.CreateInstance<T>();
+                        foreach (PropertyInfo property in properties)
+                        {
+                            try
+                            {
+                                if (reader[property.Name] == DBNull.Value)
+                                    result?.GetType().GetProperty(property.Name)?.SetValue(result, null);
+                                else
+                                    AssignPropertyValue(result, property, reader[property.Name]);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "Failed to set property {PropertyName} for type {Type}", 
+                                    property.Name, typeof(T).Name);
+                            }
+                        }
+
+                        results.Add(result);
+                        rowCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to create instance of type {Type} from database row", typeof(T).Name);
+                        throw;
+                    }
                 }
 
-                results.Add(result);
+                return results;
             }
-            return results;
-        }
-
-        public static List<T>? Select<T>(string connectionString, string query, bool isStoredProcedure = true)
-        {
-            using NpgsqlConnection connection = new(connectionString);
-            connection.Open();
-
-            using NpgsqlCommand command = new(query, connection);
-            return Select<T>(command, isStoredProcedure);
-        }
-
-        public static List<T>? Select<T>( string connectionString, string query, Dictionary<string, object?> parameters,  bool isStoredProcedure = true)
-        {
-            using NpgsqlConnection connection = new(connectionString);
-            connection.Open();
-
-            using NpgsqlCommand command = new(query, connection);
-            foreach (KeyValuePair<string, object> parameter in parameters)
+            catch (NpgsqlException ex)
             {
-                command.Parameters.AddWithValue(parameter.Key, parameter.Value);
+                _logger.LogError(ex, "Database error executing SELECT query: {Query}. Error Code: {ErrorCode}", 
+                    query, ex.ErrorCode);
+                throw;
             }
-            return Select<T>(command, isStoredProcedure);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error executing SELECT query: {Query}", query);
+                throw;
+            }
         }
 
-        public static void ExecuteWithParameters(string connectionString, string query, Dictionary<string, object?> parameters, bool isStoredProcedure = true)
+        public List<T>? Select<T>(string connectionString, string query, bool isStoredProcedure = true)
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
+            ArgumentException.ThrowIfNullOrWhiteSpace(query);
+
+            try
+            {
+                using NpgsqlConnection connection = new(connectionString);
+                connection.Open();
+
+                using NpgsqlCommand command = new(query, connection);
+                return Select<T>(command, isStoredProcedure, query);
+            }
+            catch (NpgsqlException ex)
+            {
+                _logger.LogError(ex, "Failed to connect to database or execute query: {Query}", query);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error in SELECT operation: {Query}", query);
+                throw;
+            }
+        }
+
+        public List<T>? Select<T>(string connectionString, string query, Dictionary<string, object?> parameters, bool isStoredProcedure = true)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
+            ArgumentException.ThrowIfNullOrWhiteSpace(query);
+            ArgumentNullException.ThrowIfNull(parameters);
+
+            try
+            {
+                using NpgsqlConnection connection = new(connectionString);
+                connection.Open();
+
+                using NpgsqlCommand command = new(query, connection);
+                foreach (KeyValuePair<string, object?> parameter in parameters)
+                {
+                    var value = parameter.Value ?? DBNull.Value;
+                    command.Parameters.AddWithValue(parameter.Key, value);
+                }
+
+                return Select<T>(command, isStoredProcedure, query);
+            }
+            catch (NpgsqlException ex)
+            {
+                _logger.LogError(ex, "Database error executing parameterized SELECT query: {Query}", query);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error in parameterized SELECT operation: {Query}", query);
+                throw;
+            }
+        }
+
+        public void ExecuteWithParameters(string connectionString, string query, Dictionary<string, object?> parameters, bool isStoredProcedure = true)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
+            ArgumentException.ThrowIfNullOrWhiteSpace(query);
+            ArgumentNullException.ThrowIfNull(parameters);
+
             try
             {
 #if DEBUG
@@ -90,7 +173,6 @@ namespace SoftwareEngineeringDevOps.App.Database
                 {
                     IncludeErrorDetail = true
                 };
-
                 connectionString = connBuilder.ConnectionString;
 #endif
 
@@ -101,17 +183,30 @@ namespace SoftwareEngineeringDevOps.App.Database
                 foreach (KeyValuePair<string, object?> parameter in parameters)
                 {
                     if (parameter.Value == null)
+                    {
                         command.Parameters.AddWithValue(parameter.Key, DBNull.Value);
+                    }
                     else
+                    {
                         command.Parameters.AddWithValue(parameter.Key, parameter.Value);
+                    }
                 }
+
                 if (isStoredProcedure)
                     command.CommandType = CommandType.StoredProcedure;
-                command.ExecuteNonQuery();
+
+                int rowsAffected = command.ExecuteNonQuery();
+            }
+            catch (NpgsqlException ex)
+            {
+                _logger.LogError(ex, "Database error executing command: {Query}. Error Code: {ErrorCode}", 
+                    query, ex.ErrorCode);
+                throw;
             }
             catch (Exception ex)
             {
-                throw new Exception(ex.Message);
+                _logger.LogError(ex, "Unexpected error executing command: {Query}", query);
+                throw;
             }
         }
     }

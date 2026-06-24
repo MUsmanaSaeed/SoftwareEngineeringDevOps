@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using SoftwareEngineeringDevOps.App.Auth;
 using SoftwareEngineeringDevOps.App.Users;
 using SoftwareEngineeringDevOps.App.Validation;
@@ -8,11 +9,16 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
     {
         private readonly IUsersMediator _usersMediator;
         private readonly IAuthService _authService;
+        private readonly ILogger<UsersViewModel> _logger;
 
-        public UsersViewModel(IUsersMediator usersMediator, IAuthService authService)
+        public UsersViewModel(IUsersMediator usersMediator, IAuthService authService, ILogger<UsersViewModel> logger)
         {
+            ArgumentNullException.ThrowIfNull(usersMediator);
+            ArgumentNullException.ThrowIfNull(authService);
+            ArgumentNullException.ThrowIfNull(logger);
             _usersMediator = usersMediator;
             _authService = authService;
+            _logger = logger;
         }
 
         public IEnumerable<IUser> Users { get; set; } = Enumerable.Empty<IUser>();
@@ -43,9 +49,18 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
 
         public async Task LoadUsers()
         {
-            IsLoading = true;
-            Users = await _usersMediator.GetAllUsers();
-            IsLoading = false;
+            try
+            {
+                IsLoading = true;
+                Users = await _usersMediator.GetAllUsers();
+                IsLoading = false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ViewModel: Error loading users");
+                ErrorMessage = "Failed to load users. Please try again.";
+                IsLoading = false;
+            }
         }
 
         public void SelectUser(IUser user)
@@ -68,26 +83,41 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
 
         public async Task<bool> AddUser()
         {
-            ValidationErrors.Clear();
-            var errors = InputValidator.ValidateUser(NewUserModel, requireLastName: false, requireStrongPassword: false);
-            if (errors.Count > 0)
+            try
             {
-                ValidationErrors = errors;
+                ValidationErrors.Clear();
+                var errors = InputValidator.ValidateUser(NewUserModel, requireLastName: false, requireStrongPassword: false);
+                if (errors.Count > 0)
+                {
+                    ValidationErrors = errors;
+                    _logger.LogWarning("ViewModel: User validation failed for new user: {Username}", NewUserModel.Username);
+                    ShowAddModal = true;
+                    return false;
+                }
+
+                if (Users.Any(u => u.Username.Equals(NewUserModel.Username, StringComparison.OrdinalIgnoreCase)))
+                {
+                    ValidationErrors.Add("A user with that username already exists.");
+                    _logger.LogWarning("ViewModel: Duplicate username detected: {Username}", NewUserModel.Username);
+                    ShowAddModal = true;
+                    return false;
+                }
+
+                IsLoading = true;
+                await _usersMediator.Insert(NewUserModel);
+                await LoadUsers();
+                ShowAddModal = false;
+                IsLoading = false;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ViewModel: Error adding user: {Username}", NewUserModel.Username);
+                ErrorMessage = "Failed to add user. Please try again.";
+                IsLoading = false;
+                ShowAddModal = false;
                 return false;
             }
-
-            if (Users.Any(u => u.Username.Equals(NewUserModel.Username, StringComparison.OrdinalIgnoreCase)))
-            {
-                ValidationErrors.Add("A user with that username already exists.");
-                return false;
-            }
-
-            IsLoading = true;
-            await _usersMediator.Insert(NewUserModel);
-            await LoadUsers();
-            ShowAddModal = false;
-            IsLoading = false;
-            return true;
         }
 
         public void OpenEditModal(IUser user)
@@ -105,40 +135,57 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
 
         public async Task<bool> UpdateUser()
         {
-            if (EditUserModel == null) return false;
-
-            ValidationErrors.Clear();
-            var errors = InputValidator.ValidateUser(EditUserModel, requireLastName: false, requireStrongPassword: false);
-            if (errors.Count > 0)
+            try
             {
-                ValidationErrors = errors;
+                if (EditUserModel == null) return false;
+
+                ValidationErrors.Clear();
+                var errors = InputValidator.ValidateUser(EditUserModel, requireLastName: false, requireStrongPassword: false);
+                if (errors.Count > 0)
+                {
+                    ValidationErrors = errors;
+                    _logger.LogWarning("ViewModel: User validation failed for edit user: {UserId}", EditUserModel.Id);
+                    ShowEditModal = true;
+                    return false;
+                }
+
+                if (Users.Any(u => u.Id != EditUserModel.Id && u.Username.Equals(EditUserModel.Username, StringComparison.OrdinalIgnoreCase)))
+                {
+                    ValidationErrors.Add("A user with that username already exists.");
+                    _logger.LogWarning("ViewModel: Duplicate username detected during edit: {Username}", EditUserModel.Username);
+                    ShowEditModal = true;
+                    return false;
+                }
+
+                // Self-preservation: prevent admin from removing their own admin status
+                if (EditUserModel.Id == CurrentUserId && !EditUserModel.IsAdmin)
+                {
+                    ValidationErrors.Add("You cannot remove your own admin privileges.");
+                    _logger.LogWarning("ViewModel: Attempted to remove own admin privileges: {UserId}", EditUserModel.Id);
+                    ShowEditModal = true;
+                    return false;
+                }
+
+                IsLoading = true;
+                await _usersMediator.Update(EditUserModel);
+                await LoadUsers();
+                ShowEditModal = false;
+
+                if (SelectedUser?.Id == EditUserModel.Id)
+                {
+                    SelectedUser = (await _usersMediator.GetUserById(EditUserModel.Id)) as IUser;
+                }
+                IsLoading = false;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ViewModel: Error updating user: {UserId}", EditUserModel?.Id);
+                ErrorMessage = "Failed to update user. Please try again.";
+                IsLoading = false;
+                ShowEditModal = false;
                 return false;
             }
-
-            if (Users.Any(u => u.Id != EditUserModel.Id && u.Username.Equals(EditUserModel.Username, StringComparison.OrdinalIgnoreCase)))
-            {
-                ValidationErrors.Add("A user with that username already exists.");
-                return false;
-            }
-
-            // Self-preservation: prevent admin from removing their own admin status
-            if (EditUserModel.Id == CurrentUserId && !EditUserModel.IsAdmin)
-            {
-                ValidationErrors.Add("You cannot remove your own admin privileges.");
-                return false;
-            }
-
-            IsLoading = true;
-            await _usersMediator.Update(EditUserModel);
-            await LoadUsers();
-            ShowEditModal = false;
-
-            if (SelectedUser?.Id == EditUserModel.Id)
-            {
-                SelectedUser = (await _usersMediator.GetUserById(EditUserModel.Id)) as IUser;
-            }
-            IsLoading = false;
-            return true;
         }
 
         public void OpenDeleteConfirm(IUser user)
@@ -156,22 +203,34 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
 
         public async Task<bool> DeleteUser()
         {
-            if (SelectedUser == null) return false;
-
-            // Self-preservation: prevent admin from deleting themselves
-            if (SelectedUser.Id == CurrentUserId)
+            try
             {
-                ErrorMessage = "You cannot delete your own account.";
+                if (SelectedUser == null) return false;
+
+                // Self-preservation: prevent admin from deleting themselves
+                if (SelectedUser.Id == CurrentUserId)
+                {
+                    ErrorMessage = "You cannot delete your own account.";
+                    _logger.LogWarning("ViewModel: Attempted to delete own account: {UserId}", SelectedUser.Id);
+                    return false;
+                }
+
+                IsLoading = true;
+                await _usersMediator.Delete(SelectedUser.Id);
+                SelectedUser = null;
+                await LoadUsers();
+                ShowDeleteConfirm = false;
+                IsLoading = false;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ViewModel: Error deleting user: {UserId}", SelectedUser?.Id);
+                ErrorMessage = "Failed to delete user. Please try again.";
+                IsLoading = false;
+                ShowDeleteConfirm = false;
                 return false;
             }
-
-            IsLoading = true;
-            await _usersMediator.Delete(SelectedUser.Id);
-            SelectedUser = null;
-            await LoadUsers();
-            ShowDeleteConfirm = false;
-            IsLoading = false;
-            return true;
         }
     }
 }

@@ -9,6 +9,7 @@ using SoftwareEngineeringDevOps.App.BrickOrdersReceived.Repository;
 using SoftwareEngineeringDevOps.App.Bricks;
 using SoftwareEngineeringDevOps.App.Bricks.Persistence;
 using SoftwareEngineeringDevOps.App.Bricks.Repository;
+using SoftwareEngineeringDevOps.App.Database;
 using SoftwareEngineeringDevOps.App.Manufacturers;
 using SoftwareEngineeringDevOps.App.Manufacturers.Persistence;
 using SoftwareEngineeringDevOps.App.Manufacturers.Repository;
@@ -17,6 +18,7 @@ using SoftwareEngineeringDevOps.App.Users.Persistence;
 using SoftwareEngineeringDevOps.App.Users.Repository;
 using SoftwareEngineeringDevOps.Components;
 using SoftwareEngineeringDevOps.Components.Shared;
+using SoftwareEngineeringDevOps.Components.ViewModels;
 
 
 AppContext.SetSwitch("Npgsql.EnableStoredProcedureCompatMode", true);
@@ -29,6 +31,9 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddAuthorizationCore();
+
+// Core database infrastructure
+builder.Services.AddSingleton<SQL_Execute>();
 
 builder.Services.AddSingleton<IUsersDB, UsersDB>();
 builder.Services.AddSingleton<IUsersRepository, UsersRepository>();
@@ -56,6 +61,14 @@ builder.Services.AddScoped<IAuthService>(sp => sp.GetRequiredService<AuthService
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<AuthService>());
 
 builder.Services.AddScoped<IToastService, ToastService>();
+
+// ViewModels - scoped per circuit for Blazor Server
+builder.Services.AddScoped<UsersViewModel>();
+builder.Services.AddScoped<BricksViewModel>();
+builder.Services.AddScoped<ManufacturersViewModel>();
+builder.Services.AddScoped<OrdersViewModel>();
+builder.Services.AddScoped<LoginViewModel>();
+builder.Services.AddScoped<RegisterViewModel>();
 
 var app = builder.Build();
 

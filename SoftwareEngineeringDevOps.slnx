@@ -1,7 +1,10 @@
 <Solution>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
+    <File Path=".github/workflows/pre-deployment-tests.yml" />
+    <File Path=".github/workflows/test-suite.yml" />
     <File Path="render.yaml" />
   </Folder>
+  <Project Path="SoftwareEngineeringDevOps.Tests/SoftwareEngineeringDevOps.Tests.csproj" />
   <Project Path="SoftwareEngineeringDevOps/SoftwareEngineeringDevOps.csproj" />
 </Solution>

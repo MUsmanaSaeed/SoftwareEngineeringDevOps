@@ -4,6 +4,7 @@
 @inject IManufacturersMediator ManufacturersMediator
 @inject IBricksMediator BricksMediator
 @inject IBrickOrdersMediator OrdersMediator
+@inject ManufacturersViewModel ViewModel
 @inject NavigationManager Navigation
 @inject IToastService ToastService
 
@@ -281,8 +282,6 @@
 }
 
 @code {
-    ManufacturersViewModel ViewModel { get; set; } = null!;
-
     [SupplyParameterFromQuery(Name = "action")]
     public string? Action { get; set; }
 
@@ -291,7 +290,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        ViewModel = new ManufacturersViewModel(ManufacturersMediator, BricksMediator, OrdersMediator, AuthService);
         await ViewModel.LoadManufacturers();
 
         if (SelectedId.HasValue)

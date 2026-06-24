@@ -2,6 +2,7 @@
 @page "/users/{SelectedId:long}"
 @inject IAuthService AuthService
 @inject IUsersMediator UsersMediator
+@inject UsersViewModel ViewModel
 @inject NavigationManager Navigation
 @inject IToastService ToastService
 
@@ -122,11 +123,11 @@
                 </div>
                 <div class="form-group">
                     <label>First Name</label>
-                    <input class="form-input" value="@ViewModel.NewUserModel.FirstName" @oninput="HandleAddFirstNameInput" />
+                    <input class="form-input" style="text-transform: capitalize;" @bind="ViewModel.NewUserModel.FirstName" @onblur="HandleAddFirstNameBlur" />
                 </div>
                 <div class="form-group">
                     <label>Last Name</label>
-                    <input class="form-input" value="@ViewModel.NewUserModel.LastName" @oninput="HandleAddLastNameInput" />
+                    <input class="form-input" style="text-transform: capitalize;" @bind="ViewModel.NewUserModel.LastName" @onblur="HandleAddLastNameBlur" />
                 </div>
                 <div class="permissions-section">
                     <h5 class="permissions-heading">Permissions</h5>
@@ -180,11 +181,11 @@
                 </div>
                 <div class="form-group">
                     <label>First Name</label>
-                    <input class="form-input" value="@ViewModel.EditUserModel.FirstName" @oninput="HandleEditFirstNameInput" />
+                    <input class="form-input" style="text-transform: capitalize;" @bind="ViewModel.EditUserModel.FirstName" @onblur="HandleEditFirstNameBlur" />
                 </div>
                 <div class="form-group">
                     <label>Last Name</label>
-                    <input class="form-input" value="@ViewModel.EditUserModel.LastName" @oninput="HandleEditLastNameInput" />
+                    <input class="form-input" style="text-transform: capitalize;" @bind="ViewModel.EditUserModel.LastName" @onblur="HandleEditLastNameBlur" />
                 </div>
                 <div class="permissions-section">
                     <h5 class="permissions-heading">Permissions</h5>
@@ -237,8 +238,6 @@
 }
 
 @code {
-    UsersViewModel ViewModel { get; set; } = null!;
-
     [SupplyParameterFromQuery(Name = "action")]
     public string? Action { get; set; }
 
@@ -247,7 +246,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        ViewModel = new UsersViewModel(UsersMediator, AuthService);
         await ViewModel.LoadUsers();
 
         if (SelectedId.HasValue)
@@ -272,30 +270,33 @@
         Navigation.NavigateTo($"/users/{user.Id}", forceLoad: false, replace: true);
     }
 
-    void HandleAddFirstNameInput(ChangeEventArgs e)
+    void HandleAddFirstNameBlur(FocusEventArgs _)
     {
-        ViewModel.NewUserModel.FirstName = e.Value?.ToString().ToTitleCase() ?? string.Empty;
+        ViewModel.NewUserModel.FirstName = NormalizeName(ViewModel.NewUserModel.FirstName);
     }
 
-    void HandleAddLastNameInput(ChangeEventArgs e)
+    void HandleAddLastNameBlur(FocusEventArgs _)
     {
-        ViewModel.NewUserModel.LastName = e.Value?.ToString().ToTitleCase() ?? string.Empty;
+        ViewModel.NewUserModel.LastName = NormalizeName(ViewModel.NewUserModel.LastName);
     }
 
-    void HandleEditFirstNameInput(ChangeEventArgs e)
+    void HandleEditFirstNameBlur(FocusEventArgs _)
     {
         if (ViewModel.EditUserModel == null) return;
-        ViewModel.EditUserModel.FirstName = e.Value?.ToString().ToTitleCase() ?? string.Empty;
+        ViewModel.EditUserModel.FirstName = NormalizeName(ViewModel.EditUserModel.FirstName);
     }
 
-    void HandleEditLastNameInput(ChangeEventArgs e)
+    void HandleEditLastNameBlur(FocusEventArgs _)
     {
         if (ViewModel.EditUserModel == null) return;
-        ViewModel.EditUserModel.LastName = e.Value?.ToString().ToTitleCase() ?? string.Empty;
+        ViewModel.EditUserModel.LastName = NormalizeName(ViewModel.EditUserModel.LastName);
     }
 
     async Task HandleAddUser()
     {
+        ViewModel.NewUserModel.FirstName = NormalizeName(ViewModel.NewUserModel.FirstName);
+        ViewModel.NewUserModel.LastName = NormalizeName(ViewModel.NewUserModel.LastName);
+
         var success = await ViewModel.AddUser();
         if (success)
         {
@@ -310,6 +311,12 @@
 
     async Task HandleUpdateUser()
     {
+        if (ViewModel.EditUserModel != null)
+        {
+            ViewModel.EditUserModel.FirstName = NormalizeName(ViewModel.EditUserModel.FirstName);
+            ViewModel.EditUserModel.LastName = NormalizeName(ViewModel.EditUserModel.LastName);
+        }
+
         var success = await ViewModel.UpdateUser();
         if (success)
         {
@@ -345,5 +352,10 @@
         else if (action != null)
             uri = $"/users?action={action}";
         Navigation.NavigateTo(uri, forceLoad: false, replace: true);
+    }
+
+    private static string NormalizeName(string? value)
+    {
+        return (value ?? string.Empty).ToTitleCase();
     }
 }
