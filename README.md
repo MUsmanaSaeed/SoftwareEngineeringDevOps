@@ -1,4 +1,4 @@
-# ACS Brick Management System
+# ACS Brick Management
 
 A Blazor Server application for managing bricks, manufacturers, orders, and user access in a role-based workflow.
 
