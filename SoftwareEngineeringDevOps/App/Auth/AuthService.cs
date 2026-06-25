@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
@@ -51,6 +52,11 @@ namespace SoftwareEngineeringDevOps.App.Auth
                 {
                     await _protectedLocalStorage.DeleteAsync(TokenStorageKey);
                 }
+            }
+            catch (CryptographicException)
+            {
+                _currentUser = null;
+                await TryDeleteStoredTokenAsync();
             }
             catch (InvalidOperationException)
             {
@@ -107,6 +113,13 @@ namespace SoftwareEngineeringDevOps.App.Auth
             _currentUser = null;
             _isInitialized = true;
 
+            await TryDeleteStoredTokenAsync();
+
+            NotifyAuthenticationStateChanged(Task.FromResult(CreateAuthenticationState(_currentUser)));
+        }
+
+        private async Task TryDeleteStoredTokenAsync()
+        {
             try
             {
                 await _protectedLocalStorage.DeleteAsync(TokenStorageKey);
@@ -114,8 +127,9 @@ namespace SoftwareEngineeringDevOps.App.Auth
             catch (InvalidOperationException)
             {
             }
-
-            NotifyAuthenticationStateChanged(Task.FromResult(CreateAuthenticationState(_currentUser)));
+            catch (CryptographicException)
+            {
+            }
         }
 
         private AuthenticationState CreateAuthenticationState(IUserInfo? user)
