@@ -127,15 +127,16 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Playwright browsers
-        run: |
-          dotnet tool install --global Microsoft.Playwright.CLI
-          playwright install chromium --with-deps
-
       - name: Restore dependencies
         run: |
           dotnet restore SoftwareEngineeringDevOps/SoftwareEngineeringDevOps.csproj
           dotnet restore SoftwareEngineeringDevOps.Tests/SoftwareEngineeringDevOps.Tests.csproj
+
+      - name: Build test project
+        run: dotnet build SoftwareEngineeringDevOps.Tests/SoftwareEngineeringDevOps.Tests.csproj --configuration Release --no-restore
+
+      - name: Install Playwright browsers
+        run: pwsh SoftwareEngineeringDevOps.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
 
       - name: Build application
         run: dotnet build SoftwareEngineeringDevOps/SoftwareEngineeringDevOps.csproj --configuration Release --no-restore
@@ -148,13 +149,13 @@ jobs:
           sleep 10
         env:
           ASPNETCORE_ENVIRONMENT: Test
-          ASPNETCORE_URLS: http://localhost:5000
+          ASPNETCORE_URLS: http://localhost:5181
           ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=testdb;Username=testuser;******"
 
       - name: Wait for application startup
         run: |
           echo "Waiting for application to start..."
-          timeout 60 bash -c 'until curl -s http://localhost:5000 > /dev/null; do sleep 2; done' || exit 1
+          timeout 60 bash -c 'until curl -s http://localhost:5181 > /dev/null; do sleep 2; done' || exit 1
           echo "Application is running"
 
       - name: Run E2E tests
@@ -166,7 +167,7 @@ jobs:
             --logger "console;verbosity=detailed" \
             --filter "FullyQualifiedName~E2E"
         env:
-          BASE_URL: http://localhost:5000
+          BASE_URL: http://localhost:5181
 
       - name: Stop application
         if: always()
