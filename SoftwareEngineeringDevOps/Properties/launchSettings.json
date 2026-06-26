@@ -4,12 +4,7 @@
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "DB_HOST": "ep-autumn-cell-abv9no1b-pooler.eu-west-2.aws.neon.tech",
-        "DB_PORT": "5432",
-        "DB_NAME": "neondb",
-        "DB_USERID": "neondb_owner",
-        "DB_PASSWORD": "npg_ZGLEviVrY1B8"
+        "ASPNETCORE_ENVIRONMENT": "Development"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "http://localhost:5181"
@@ -18,12 +13,7 @@
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "DB_HOST": "ep-autumn-cell-abv9no1b-pooler.eu-west-2.aws.neon.tech",
-        "DB_PORT": "5432",
-        "DB_NAME": "neondb",
-        "DB_USERID": "neondb_owner",
-        "DB_PASSWORD": "npg_ZGLEviVrY1B8"
+        "ASPNETCORE_ENVIRONMENT": "Development"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "https://localhost:7144;http://localhost:5181"
