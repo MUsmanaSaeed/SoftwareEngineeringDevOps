@@ -1,17 +1,14 @@
 name: Test Suite
-
 on:
   push:
     branches: [ master ]
   pull_request:
     branches: [ master ]
   workflow_dispatch:
-
 env:
   DOTNET_VERSION: '10.0.x'
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
   DOTNET_NOLOGO: true
-
 jobs:
   unit-tests:
     name: Unit Tests
@@ -150,7 +147,11 @@ jobs:
         env:
           ASPNETCORE_ENVIRONMENT: Test
           ASPNETCORE_URLS: http://localhost:5181
-          ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=testdb;Username=testuser;******"
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USERID: ${{ secrets.DB_USERID }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
 
       - name: Wait for application startup
         run: |
