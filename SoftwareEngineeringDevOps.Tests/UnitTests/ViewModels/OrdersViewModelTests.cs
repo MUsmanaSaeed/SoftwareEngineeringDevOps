@@ -560,6 +560,62 @@ namespace SoftwareEngineeringDevOps.Tests.UnitTests.ViewModels
         }
 
         [Fact]
+        public async Task SelectedOrderTotalOrdered_ShouldExcludeCancelledOrderLines()
+        {
+            // Arrange
+            var orders = new List<IBrickOrder>
+            {
+                MockDataFactory.BrickOrders.CreateValid(1, 1, "ORD-001"),
+                MockDataFactory.BrickOrders.CreateValid(2, 1, "ORD-001", isCancelled: true)
+            };
+            var bricks = new List<IBrick> { MockDataFactory.Bricks.CreateValid(1) };
+            var received = Enumerable.Empty<IBrickOrderReceived>();
+
+            _mockOrdersMediator.Setup(m => m.GetAllBrickOrders()).ReturnsAsync(orders);
+            _mockBricksMediator.Setup(m => m.GetAllBricks()).ReturnsAsync(bricks);
+            _mockReceivedMediator.Setup(m => m.GetAllBrickOrdersReceived()).ReturnsAsync(received);
+
+            await _viewModel.LoadOrders();
+            await _viewModel.SelectOrderGroup("ORD-001");
+
+            // Act
+            var total = _viewModel.SelectedOrderTotalOrdered;
+
+            // Assert
+            total.Should().Be(1000);
+        }
+
+        [Fact]
+        public async Task SelectedOrderTotalReceived_ShouldExcludeCancelledOrderLines()
+        {
+            // Arrange
+            var orders = new List<IBrickOrder>
+            {
+                MockDataFactory.BrickOrders.CreateValid(1, 1, "ORD-001"),
+                MockDataFactory.BrickOrders.CreateValid(2, 1, "ORD-001", isCancelled: true)
+            };
+            var bricks = new List<IBrick> { MockDataFactory.Bricks.CreateValid(1) };
+            var received = new List<IBrickOrderReceived>
+            {
+                MockDataFactory.BrickOrdersReceived.CreateValid(1, 1, 500),
+                MockDataFactory.BrickOrdersReceived.CreateValid(2, 2, 500)
+            };
+
+            _mockOrdersMediator.Setup(m => m.GetAllBrickOrders()).ReturnsAsync(orders);
+            _mockBricksMediator.Setup(m => m.GetAllBricks()).ReturnsAsync(bricks);
+            _mockReceivedMediator.Setup(m => m.GetAllBrickOrdersReceived()).ReturnsAsync(received);
+
+            await _viewModel.LoadOrders();
+            await _viewModel.SelectOrderGroup("ORD-001");
+
+            // Act
+            var total = _viewModel.SelectedOrderTotalReceived;
+
+            // Assert
+            total.Should().Be(500);
+        }
+
+        [Fact]
         public async Task SelectedOrderFirstOrderedDate_ShouldReturnEarliestDate()
         {
             // Arrange

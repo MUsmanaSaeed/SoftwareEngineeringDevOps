@@ -157,7 +157,7 @@
                 }
                 <div class="form-group">
                     <label>Name</label>
-                    <input class="form-input" value="@ViewModel.NewManufacturerModel.Name" @oninput="HandleAddNameInput" />
+                    <input class="form-input" style="text-transform: capitalize;" value="@ViewModel.NewManufacturerModel.Name" @oninput="HandleAddNameInput" @onblur="HandleAddNameBlur" />
                 </div>
                 <div class="form-group">
                     <label>Address Line 1</label>
@@ -210,7 +210,7 @@
                 }
                 <div class="form-group">
                     <label>Name</label>
-                    <input class="form-input" value="@ViewModel.EditManufacturerModel.Name" @oninput="HandleEditNameInput" />
+                    <input class="form-input" style="text-transform: capitalize;" value="@ViewModel.EditManufacturerModel.Name" @oninput="HandleEditNameInput" @onblur="HandleEditNameBlur" />
                 </div>
                 <div class="form-group">
                     <label>Address Line 1</label>
@@ -321,6 +321,9 @@
 
     async Task HandleAdd()
     {
+        ViewModel.NewManufacturerModel.Name = NormalizeName(ViewModel.NewManufacturerModel.Name);
+        ViewModel.ValidateAddManufacturerName();
+
         var name = ViewModel.NewManufacturerModel.Name;
         var success = await ViewModel.AddManufacturer();
         if (success)
@@ -339,6 +342,12 @@
 
     async Task HandleUpdate()
     {
+        if (ViewModel.EditManufacturerModel != null)
+        {
+            ViewModel.EditManufacturerModel.Name = NormalizeName(ViewModel.EditManufacturerModel.Name);
+            ViewModel.ValidateEditManufacturerName();
+        }
+
         var name = ViewModel.EditManufacturerModel?.Name;
         var success = await ViewModel.UpdateManufacturer();
         if (success)
@@ -377,7 +386,13 @@
 
     void HandleAddNameInput(ChangeEventArgs e)
     {
-        ViewModel.NewManufacturerModel.Name = e.Value?.ToString().ToTitleCase() ?? string.Empty;
+        ViewModel.NewManufacturerModel.Name = e.Value?.ToString() ?? string.Empty;
+        ViewModel.ValidateAddManufacturerName();
+    }
+
+    void HandleAddNameBlur()
+    {
+        ViewModel.NewManufacturerModel.Name = NormalizeName(ViewModel.NewManufacturerModel.Name);
         ViewModel.ValidateAddManufacturerName();
     }
 
@@ -404,7 +419,14 @@
     void HandleEditNameInput(ChangeEventArgs e)
     {
         if (ViewModel.EditManufacturerModel == null) return;
-        ViewModel.EditManufacturerModel.Name = e.Value?.ToString().ToTitleCase() ?? string.Empty;
+        ViewModel.EditManufacturerModel.Name = e.Value?.ToString() ?? string.Empty;
+        ViewModel.ValidateEditManufacturerName();
+    }
+
+    void HandleEditNameBlur()
+    {
+        if (ViewModel.EditManufacturerModel == null) return;
+        ViewModel.EditManufacturerModel.Name = NormalizeName(ViewModel.EditManufacturerModel.Name);
         ViewModel.ValidateEditManufacturerName();
     }
 
@@ -430,5 +452,10 @@
     {
         if (ViewModel.EditManufacturerModel == null) return;
         ViewModel.EditManufacturerModel.PhoneNo = ManufacturersViewModel.SanitizePhone(e.Value?.ToString());
+    }
+
+    static string NormalizeName(string? value)
+    {
+        return (value ?? string.Empty).ToTitleCase();
     }
 }
