@@ -131,10 +131,14 @@ namespace SoftwareEngineeringDevOps.Components.ViewModels
                 : null;
 
         public int SelectedOrderTotalOrdered =>
-            _selectedOrderTotalOrdered ??= _selectedOrderLines.Sum(line => line.BricksOrdered);
+            _selectedOrderTotalOrdered ??= _selectedOrderLines
+                .Where(line => line.CancelledDate == null)
+                .Sum(line => line.BricksOrdered);
 
         public int SelectedOrderTotalReceived =>
-            _selectedOrderTotalReceived ??= _selectedOrderLines.Sum(line => Math.Min(line.BricksOrdered, GetTotalReceived(line)));
+            _selectedOrderTotalReceived ??= _selectedOrderLines
+                .Where(line => line.CancelledDate == null)
+                .Sum(line => Math.Min(line.BricksOrdered, GetTotalReceived(line)));
 
         public decimal SelectedOrderFulfillmentPercentage
         {

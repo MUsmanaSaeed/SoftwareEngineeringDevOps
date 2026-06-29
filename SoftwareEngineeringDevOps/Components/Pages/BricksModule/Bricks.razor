@@ -177,7 +177,7 @@
                 }
                 <div class="form-group">
                     <label>Name</label>
-                    <input class="form-input" value="@ViewModel.NewBrickModel.Name" @oninput="HandleAddNameInput" />
+                    <input class="form-input" style="text-transform: capitalize;" value="@ViewModel.NewBrickModel.Name" @oninput="HandleAddNameInput" @onblur="HandleAddNameBlur" />
                 </div>
                 <div class="form-group">
                     <label>Manufacturer</label>
@@ -259,7 +259,7 @@
                 }
                 <div class="form-group">
                     <label>Name</label>
-                    <input class="form-input" value="@ViewModel.EditBrickModel.Name" @oninput="HandleEditNameInput" />
+                    <input class="form-input" style="text-transform: capitalize;" value="@ViewModel.EditBrickModel.Name" @oninput="HandleEditNameInput" @onblur="HandleEditNameBlur" />
                 </div>
                 <div class="form-group">
                     <label>Manufacturer</label>
@@ -375,6 +375,9 @@
 
     async Task HandleAdd()
     {
+        ViewModel.NewBrickModel.Name = NormalizeName(ViewModel.NewBrickModel.Name);
+        ViewModel.ValidateAddBrickName();
+
         var name = ViewModel.NewBrickModel.Name;
         var success = await ViewModel.AddBrick();
         if (success)
@@ -393,6 +396,12 @@
 
     async Task HandleUpdate()
     {
+        if (ViewModel.EditBrickModel != null)
+        {
+            ViewModel.EditBrickModel.Name = NormalizeName(ViewModel.EditBrickModel.Name);
+            ViewModel.ValidateEditBrickName();
+        }
+
         var name = ViewModel.EditBrickModel?.Name;
         var success = await ViewModel.UpdateBrick();
         if (success)
@@ -431,7 +440,13 @@
 
     void HandleAddNameInput(ChangeEventArgs e)
     {
-        ViewModel.NewBrickModel.Name = e.Value?.ToString().ToTitleCase() ?? string.Empty;
+        ViewModel.NewBrickModel.Name = e.Value?.ToString() ?? string.Empty;
+        ViewModel.ValidateAddBrickName();
+    }
+
+    void HandleAddNameBlur()
+    {
+        ViewModel.NewBrickModel.Name = NormalizeName(ViewModel.NewBrickModel.Name);
         ViewModel.ValidateAddBrickName();
     }
 
@@ -494,7 +509,14 @@
     void HandleEditNameInput(ChangeEventArgs e)
     {
         if (ViewModel.EditBrickModel == null) return;
-        ViewModel.EditBrickModel.Name = e.Value?.ToString().ToTitleCase() ?? string.Empty;
+        ViewModel.EditBrickModel.Name = e.Value?.ToString() ?? string.Empty;
+        ViewModel.ValidateEditBrickName();
+    }
+
+    void HandleEditNameBlur()
+    {
+        if (ViewModel.EditBrickModel == null) return;
+        ViewModel.EditBrickModel.Name = NormalizeName(ViewModel.EditBrickModel.Name);
         ViewModel.ValidateEditBrickName();
     }
 
@@ -561,5 +583,10 @@
     {
         if (ViewModel.EditBrickModel == null) return;
         ViewModel.EditBrickModel.Voids = BricksViewModel.ParseVoidsPercentInput(e.Value?.ToString());
+    }
+
+    static string NormalizeName(string? value)
+    {
+        return (value ?? string.Empty).ToTitleCase();
     }
 }
